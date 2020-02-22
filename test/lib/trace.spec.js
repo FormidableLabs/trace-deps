@@ -22,6 +22,7 @@ describe("lib/trace", () => {
       expect(await traceFile({ file: "hi.js" })).to.include("TODO/one.js");
     });
     it("handles no dependencies."); // TODO
+    it("handles circular dependencies."); // TODO
     it("handles single requires with .js."); // TODO
     it("handles single imports with .mjs."); // TODO
     it("handles nested requires with .js."); // TODO
