@@ -25,6 +25,9 @@
   "engines": {
     "node": ">=8.0.0"
   },
+  "dependencies": {
+    "acorn-node": "^1.8.2"
+  },
   "devDependencies": {
     "babel-eslint": "^10.0.3",
     "chai": "^4.2.0",
@@ -38,8 +41,5 @@
     "mocha": "^7.0.1",
     "mock-fs": "^4.10.4",
     "nyc": "^15.0.0"
-  },
-  "dependencies": {
-    "acorn-node": "^1.8.2"
   }
 }
