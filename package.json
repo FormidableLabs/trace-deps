@@ -8,10 +8,9 @@
   "license": "MIT",
   "keywords": [
     "dependencies",
-    "devDependencies",
-    "node_modules",
-    "npm",
-    "yarn"
+    "require",
+    "require.resolve",
+    "import"
   ],
   "scripts": {
     "preversion": "yarn run check",
