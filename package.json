@@ -25,7 +25,8 @@
     "node": ">=8.0.0"
   },
   "dependencies": {
-    "acorn-node": "^1.8.2"
+    "acorn-node": "^1.8.2",
+    "resolve": "^1.15.1"
   },
   "devDependencies": {
     "babel-eslint": "^10.0.3",
