@@ -14,13 +14,12 @@ describe("index", () => {
   });
 
   describe("traceFile", () => {
-    it("TODO: remove mock test", async () => {
+    it("handles no dependencies.", async () => {
       mock({
-        "hi.js": "module.exports = 'hi';"
+        "exported.js": "module.exports = 'exported';"
       });
-      expect(await traceFile({ file: "hi.js" })).to.include("TODO/one.js");
+
+      expect(await traceFile({ srcPath: "exported.js" })).to.eql([]);
     });
-    it("handles no dependencies"); // TODO
-    // TODO: Other tests?
   });
 });
