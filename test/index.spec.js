@@ -14,7 +14,7 @@ describe("index", () => {
   });
 
   describe("traceFile", () => {
-    it("handles no dependencies.", async () => {
+    it("handles no dependencies", async () => {
       mock({
         "exported.js": "module.exports = 'exported';"
       });
