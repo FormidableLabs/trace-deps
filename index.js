@@ -1,7 +1,8 @@
 "use strict";
 
-const { traceFile } = require("./lib/trace");
+const { traceFile, traceFiles } = require("./lib/trace");
 
 module.exports = {
-  traceFile
+  traceFile,
+  traceFiles
 };

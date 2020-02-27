@@ -28,4 +28,8 @@ describe("lib/trace", () => {
     it("handles nested requires with .js."); // TODO
     it("handles nested imports with .mjs."); // TODO
   });
+
+  describe("traceFiles", () => {
+    it("TODO TESTS"); // TODO
+  });
 });

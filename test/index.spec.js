@@ -22,4 +22,8 @@ describe("index", () => {
       expect(await traceFile({ srcPath: "exported.js" })).to.eql([]);
     });
   });
+
+  describe("traceFiles", () => {
+    it("TODO TESTS"); // TODO
+  });
 });
