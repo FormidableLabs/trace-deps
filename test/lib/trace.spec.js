@@ -19,23 +19,22 @@ describe("lib/trace", () => {
   });
 
   describe("traceFile", () => {
+    it("throws on no source file", async () => {
+      await expect(traceFile()).to.be.rejectedWith("Empty source file path");
+    });
+
+    it("throws on nonexistent source file", async () => {
+      await expect(traceFile({ srcPath: "nope.js" })).to.be.rejectedWith(
+        "Could not find source file"
+      );
+    });
+
     it("handles no dependencies", async () => {
       mock({
         "hi.js": "module.exports = 'hi';"
       });
 
       expect(await traceFile({ srcPath: "hi.js" })).to.eql([]);
-    });
-
-    it("throws resolution errors", async () => {
-      mock({
-        "hi.js": "require('should-cause-error');"
-      });
-
-      await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
-        "Encountered resolution error in hi.js for should-cause-error: "
-        + "Error: Cannot find module 'should-cause-error' from '.'"
-      );
     });
 
     it("handles requires with .js", async () => {
