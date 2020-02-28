@@ -357,7 +357,57 @@ describe("lib/trace", () => {
       ]));
     });
 
-    it("ignores specified names and prefixes"); // TODO
+    it("ignores specified names and prefixes", async () => {
+      mock({
+        "hi.js": `
+          require("one");
+          const nope = () => import("doesnt-exist");
+          require.resolve("does-exist-shouldnt-import/index");
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = {
+                one: () => "one",
+                two: () => require("two").two
+              };
+            `
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = {
+                two: () => "two"
+              };
+            `
+          },
+          "does-exist-shouldnt-import": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = "does-exist-shouldnt-import";
+            `
+          }
+        }
+      });
+
+      expect(await traceFile({
+        srcPath: "hi.js",
+        ignores: [
+          "doesnt-exist",
+          "does-exist-shouldnt-import"
+        ]
+      })).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/two/index.js"
+      ]));
+    });
   });
 
   describe("traceFiles", () => {
