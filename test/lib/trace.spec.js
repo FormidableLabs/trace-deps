@@ -195,8 +195,8 @@ describe("lib/trace", () => {
 
     it("handles dynamic imports with .mjs", async () => {
       mock({
-        "hi.js": `
-          const one = require("one");
+        "hi.mjs": `
+          import one from "one";
           const dynamicTwo = () => import("two");
 
           (async () => {
@@ -240,7 +240,7 @@ describe("lib/trace", () => {
         }
       });
 
-      expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
+      expect(await traceFile({ srcPath: "hi.mjs" })).to.eql(fullPath([
         "node_modules/nested-flattened-three/index.mjs",
         "node_modules/one/index.mjs",
         "node_modules/three/index.mjs",
