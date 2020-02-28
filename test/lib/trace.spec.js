@@ -86,8 +86,64 @@ describe("lib/trace", () => {
       ]));
     });
 
-    it("handles nested requires with .js"); // TODO
+    it("handles nested requires with .js", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one");
+          if (one === "one") {
+            require.resolve("two");
+          }
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              const subDepOne = require("sub-dep-one");
+              module.exports = 'one';
+            `,
+            node_modules: {
+              "sub-dep-one": {
+                "package.json": stringify({
+                  main: "index.js"
+                }),
+                "index.js": `
+                  module.exports = 'one';
+                `
+              }
+            }
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              const subDepTwo = require("sub-dep-flattened-two");
+              module.exports = subDepTwo;
+            `
+          },
+          "sub-dep-flattened-two": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = 'two';
+            `
+          }
+        }
+      });
+
+      expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/one/node_modules/sub-dep-one/index.js",
+        "node_modules/sub-dep-flattened-two/index.js",
+        "node_modules/two/index.js"
+      ]));
+    });
+
     it("handles nested imports with .mjs"); // TODO
+    it("handles lower directories than where file is located"); // TODO
     it("handles circular dependencies"); // TODO
     it("ignores specified names and prefixes"); // TODO
   });
