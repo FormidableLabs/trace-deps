@@ -32,6 +32,9 @@ describe("lib/trace", () => {
         "hi.js": `
           const one = require("one");
           require("two");
+
+          const variableDep = "shouldnt-find";
+          require(variableDep);
         `,
         node_modules: {
           one: {
@@ -150,6 +153,9 @@ describe("lib/trace", () => {
 
           (async () => {
             await import("three");
+
+            const variableDep = "shouldnt-find";
+            await import(variableDep);
           })();
         `,
         node_modules: {
@@ -201,6 +207,9 @@ describe("lib/trace", () => {
 
           (async () => {
             await import("three");
+
+            const variableDep = "shouldnt-find";
+            await import(variableDep);
           })();
         `,
         node_modules: {
