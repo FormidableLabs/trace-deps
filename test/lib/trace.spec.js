@@ -29,6 +29,17 @@ describe("lib/trace", () => {
       );
     });
 
+    it("throws on nonexistent dependency", async () => {
+      mock({
+        "hi.js": "require('doesnt-exist');"
+      });
+
+      await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
+        "Encountered resolution error in hi.js for doesnt-exist: "
+        + "Error: Cannot find module 'doesnt-exist' from '.'"
+      );
+    });
+
     it("handles no dependencies", async () => {
       mock({
         "hi.js": "module.exports = 'hi';"
