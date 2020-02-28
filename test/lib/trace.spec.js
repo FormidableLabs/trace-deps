@@ -35,6 +35,9 @@ describe("lib/trace", () => {
 
           const variableDep = "shouldnt-find";
           require(variableDep);
+
+          const variableResolve = "also-shouldnt-find";
+          require.resolve(variableResolve);
         `,
         node_modules: {
           one: {
