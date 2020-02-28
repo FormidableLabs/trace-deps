@@ -27,7 +27,7 @@ describe("lib/trace", () => {
       expect(await traceFile({ srcPath: "hi.js" })).to.eql([]);
     });
 
-    it("handles single requires with .js", async () => {
+    it("handles requires with .js", async () => {
       mock({
         "hi.js": `
           const one = require("one");
@@ -55,7 +55,7 @@ describe("lib/trace", () => {
       ]));
     });
 
-    it("handles single imports with .mjs", async () => {
+    it("handles imports with .mjs", async () => {
       mock({
         "hi.mjs": `
           import { one } from "one";
@@ -142,8 +142,112 @@ describe("lib/trace", () => {
       ]));
     });
 
-    it("handles dynamic imports with .js"); // TODO: IMPLEMENT_FEATURE
-    it("handles dynamic imports with .mjs"); // TODO: IMPLEMENT_FEATURE
+    it("handles dynamic imports with .js", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one");
+          const dynamicTwo = () => import("two");
+
+          (async () => {
+            await import("three");
+          })();
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = 'one';"
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = 'two';"
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": `
+              import three from "nested-three";
+              export default three;
+            `,
+            node_modules: {
+              "nested-three": {
+                "package.json": stringify({
+                  main: "index.mjs"
+                }),
+                "index.mjs": "export const three = 'three';"
+              }
+            }
+          }
+        }
+      });
+
+      expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/three/index.mjs",
+        "node_modules/three/node_modules/nested-three/index.mjs",
+        "node_modules/two/index.js"
+      ]));
+    });
+
+    it("handles dynamic imports with .mjs", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one");
+          const dynamicTwo = () => import("two");
+
+          (async () => {
+            await import("three");
+          })();
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": `
+              const one = 'one';
+              export default one;
+            `
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": `
+              const two = 'two';
+              export default two;
+            `
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": `
+              import three from "nested-flattened-three";
+              export default three;
+            `
+          },
+          "nested-flattened-three": {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": "export const three = 'three';"
+          }
+        }
+      });
+
+      expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
+        "node_modules/nested-flattened-three/index.mjs",
+        "node_modules/one/index.mjs",
+        "node_modules/three/index.mjs",
+        "node_modules/two/index.mjs"
+      ]));
+    });
+
     it("handles lower directories than where file is located"); // TODO
     it("handles circular dependencies"); // TODO
     it("ignores specified names and prefixes"); // TODO
