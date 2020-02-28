@@ -1,4 +1,4 @@
-trace-deps 👣
+trace-deps 🔬
 ============
 
 [![npm version][npm_img]][npm_site]

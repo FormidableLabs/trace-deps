@@ -143,6 +143,8 @@ describe("lib/trace", () => {
     });
 
     it("handles nested imports with .mjs"); // TODO
+    it("handles dynamic imports with .mjs"); // TODO: IMPLEMENT_FEATURE
+    it("handles dynamic imports with .js"); // TODO: IMPLEMENT_FEATURE
     it("handles lower directories than where file is located"); // TODO
     it("handles circular dependencies"); // TODO
     it("ignores specified names and prefixes"); // TODO
