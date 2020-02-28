@@ -2,7 +2,7 @@
 
 const mock = require("mock-fs");
 
-const { traceFile } = require("../../lib/trace");
+const { traceFile, traceFiles } = require("../../lib/trace");
 
 
 describe("lib/trace", () => {
@@ -22,6 +22,7 @@ describe("lib/trace", () => {
 
       expect(await traceFile({ srcPath: "hi.js" })).to.eql([]);
     });
+
     it("handles circular dependencies"); // TODO
     it("handles single requires with .js"); // TODO
     it("handles single imports with .mjs"); // TODO
@@ -31,6 +32,18 @@ describe("lib/trace", () => {
   });
 
   describe("traceFiles", () => {
+    it("handles empty sources list", async () => {
+      expect(await traceFiles({ srcPaths: [] })).to.eql([]);
+    });
+
+    it("handles no dependencies", async () => {
+      mock({
+        "hi.js": "module.exports = 'hi';"
+      });
+
+      expect(await traceFiles({ srcPaths: ["hi.js"] })).to.eql([]);
+    });
+
     it("TODO TESTS"); // TODO
   });
 });
