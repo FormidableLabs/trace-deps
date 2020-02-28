@@ -294,7 +294,69 @@ describe("lib/trace", () => {
       ]));
     });
 
-    it("handles circular dependencies"); // TODO
+    it("handles circular dependencies", async () => {
+      mock({
+        "hi.js": `
+          // All are circular. Import two of them.
+          require("one");
+          require("three");
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = {
+                one: () => "one",
+                two: () => require("two").two
+              };
+            `
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = {
+                two: () => "two",
+                three: () => require("three").three
+              };
+            `
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = {
+                three: () => "three",
+                four: () => require("four").four
+              };
+            `
+          },
+          four: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = {
+                one: () => require("one").one,
+                four: () => "four"
+              };
+            `
+          }
+        }
+      });
+
+      expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
+        "node_modules/four/index.js",
+        "node_modules/one/index.js",
+        "node_modules/three/index.js",
+        "node_modules/two/index.js"
+      ]));
+    });
+
     it("ignores specified names and prefixes"); // TODO
   });
 
