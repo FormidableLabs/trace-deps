@@ -391,6 +391,8 @@ describe("lib/trace", () => {
               main: "index.js"
             }),
             "index.js": `
+              require("doesnt-exist");
+
               module.exports = {
                 one: () => "one",
                 two: () => require("two").two
