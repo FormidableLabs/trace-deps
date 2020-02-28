@@ -55,7 +55,37 @@ describe("lib/trace", () => {
       ]));
     });
 
-    it("handles single imports with .mjs"); // TODO
+    it("handles single imports with .mjs", async () => {
+      mock({
+        "hi.mjs": `
+          import { one } from "one";
+          import "two";
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": "export const one = 'one';"
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": `
+              const two = 'two';
+              export default two;
+            `
+          }
+        }
+      });
+
+      expect(await traceFile({ srcPath: "hi.mjs" })).to.eql(fullPath([
+        "node_modules/one/index.mjs",
+        "node_modules/two/index.mjs"
+      ]));
+    });
+
     it("handles nested requires with .js"); // TODO
     it("handles nested imports with .mjs"); // TODO
     it("handles circular dependencies"); // TODO
