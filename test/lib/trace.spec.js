@@ -248,7 +248,40 @@ describe("lib/trace", () => {
       ]));
     });
 
-    it("handles lower directories than where file is located"); // TODO
+    it("handles lower directories than where file is located", async () => {
+      mock({
+        nested: {
+          path: {
+            "hi.js": `
+              const one = require("one");
+              require("two");
+            `
+          },
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = 'one';"
+            }
+          }
+        },
+        node_modules: {
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = 'two';"
+          }
+        }
+      });
+
+      expect(await traceFile({ srcPath: "nested/path/hi.js" })).to.eql(fullPath([
+        "nested/node_modules/one/index.js",
+        "node_modules/two/index.js"
+      ]));
+    });
+
     it("handles circular dependencies"); // TODO
     it("ignores specified names and prefixes"); // TODO
   });
@@ -266,6 +299,6 @@ describe("lib/trace", () => {
       expect(await traceFiles({ srcPaths: ["hi.js"] })).to.eql([]);
     });
 
-    it("TODO TESTS"); // TODO
+    it("TODO TESTS"); // TODO: Most tests for multiple files.
   });
 });
