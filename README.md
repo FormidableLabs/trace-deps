@@ -12,10 +12,10 @@ A dependency tracing tool for Node.js source files.
 
 `trace-deps` can parse CommonJS / ESM source files, inspect dependency statements, and produce a list of absolute file paths on-disk for all inferred dependencies. The library currently works with files ending in `.js`, `.mjs` file extensions that contain the following dependency statements:
 
-- `require("<string>")`: A CommonJS require. Only detects calls with a **single string argument**.
-- `require.resolve("<string>")`: A CommonJS require resolution (returns path to dependency instead of loaded code). Only detects calls with a **single string argument**.
+- `require("<string>")`: A CommonJS require.
+- `require.resolve("<string>")`: A CommonJS require resolution (returns path to dependency instead of loaded code).
 - `import "<string>"`, `import <var> from "<string>"`: A ECMAScript Module static import.
-- `import("<string>")`: A ECMAScript Module dynamic import. Only detects calls with a **single string argument**.
+- `import("<string>")`: A ECMAScript Module dynamic import.
 
 ## API
 
@@ -44,6 +44,10 @@ _Parameters_:
 _Returns_:
 
 * (`Promise<Array<string>>`): list of absolute paths to on-disk dependencies
+
+## Notes
+
+* **Only handles single string dependencies**: `require`, `require.resolve`, and dynamic `import()` support calls with variables or other expressions like `require(aVar)`, `import(process.env.VAL + "more-stuff")`. This library presently only supports calls with a **single string** and nothing else. We have a [tracking ticket](https://github.com/FormidableLabs/trace-deps/issues/2) to consider expanding support for things like partial evaluation.
 
 [npm_img]: https://badge.fury.io/js/trace-deps.svg
 [npm_site]: http://badge.fury.io/js/trace-deps
