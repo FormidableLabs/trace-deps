@@ -12,10 +12,10 @@ A dependency tracing tool for Node.js source files.
 
 `trace-deps` can parse CommonJS / ESM source files, inspect dependency statements, and produce a list of absolute file paths on-disk for all inferred dependencies. The library currently works with files ending in `.js`, `.mjs` file extensions that contain the following dependency statements:
 
-- `require("<string>")`: A CommonJS require.
-- `require.resolve("<string>")`: A CommonJS require resolution (returns path to dependency instead of loaded code).
-- `import "<string>"`, `import <var> from "<string>"`: A ECMAScript Module static import.
-- `import("<string>")`: A ECMAScript Module dynamic import.
+- `require("<string>")`: CommonJS require.
+- `require.resolve("<string>")`: CommonJS require resolution (returns path to dependency instead of loaded code).
+- `import "<string>"`, `import <var> from "<string>"`: ECMAScript Module static import.
+- `import("<string>")`: ECMAScript Module dynamic import.
 
 ## API
 
