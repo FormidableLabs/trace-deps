@@ -87,6 +87,7 @@ describe("lib/trace", () => {
         "hi.mjs": `
           import { one } from "one";
           import "two";
+          import * as three from "three";
         `,
         node_modules: {
           one: {
@@ -103,12 +104,23 @@ describe("lib/trace", () => {
               const two = 'two';
               export default two;
             `
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": `
+              const threeNum = 3;
+              const threeStr = 'three';
+              export { threeNum, threeStr }
+            `
           }
         }
       });
 
       expect(await traceFile({ srcPath: "hi.mjs" })).to.eql(fullPath([
         "node_modules/one/index.mjs",
+        "node_modules/three/index.mjs",
         "node_modules/two/index.mjs"
       ]));
     });
