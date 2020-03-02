@@ -14,7 +14,7 @@ A dependency tracing tool for Node.js source files.
 
 - `require("<string>")`: CommonJS require.
 - `require.resolve("<string>")`: CommonJS require resolution (returns path to dependency instead of loaded code).
-- `import "<string>"`, `import <var> from "<string>"`: ECMAScript Module static import.
+- `import "<string>"`, `import <var> | { <var> } | * as <var> from "<string>"`: ECMAScript Module static import.
 - `import("<string>")`: ECMAScript Module dynamic import.
 
 ## API

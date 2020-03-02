@@ -85,7 +85,7 @@ describe("lib/trace", () => {
     it("handles imports with .mjs", async () => {
       mock({
         "hi.mjs": `
-          import { one } from "one";
+          import { one as oneVar } from "one";
           import "two";
           import * as three from "three";
         `,
