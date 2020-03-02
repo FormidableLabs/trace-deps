@@ -2,7 +2,7 @@
 
 const mock = require("mock-fs");
 
-const { traceFile } = require("..");
+const { traceFile, traceFiles } = require("..");
 
 describe("index", () => {
   beforeEach(() => {
@@ -13,14 +13,25 @@ describe("index", () => {
     mock.restore();
   });
 
+  // ... some simple tests to just make sure we re-exported things.
+
   describe("traceFile", () => {
-    it("TODO: remove mock test", async () => {
+    it("handles no dependencies", async () => {
       mock({
-        "hi.js": "module.exports = 'hi';"
+        "exported.js": "module.exports = 'exported';"
       });
-      expect(await traceFile({ file: "hi.js" })).to.include("TODO/one.js");
+
+      expect(await traceFile({ srcPath: "exported.js" })).to.eql([]);
     });
-    it("handles no dependencies"); // TODO
-    // TODO: Other tests?
+  });
+
+  describe("traceFiles", () => {
+    it("handles no dependencies", async () => {
+      mock({
+        "exported.js": "module.exports = 'exported';"
+      });
+
+      expect(await traceFiles({ srcPaths: ["exported.js"] })).to.eql([]);
+    });
   });
 });
