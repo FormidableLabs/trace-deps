@@ -625,6 +625,8 @@ describe("lib/trace", () => {
           const variableDep = "shouldnt-find";
           require(variableDep)();
         `,
+        // TODO(13) Optimization: Verify `package.json` is not included
+        // https://github.com/FormidableLabs/trace-deps/issues/13
         "package.json": stringify({
           description: "should be unused",
           main: "hi.js"
@@ -642,6 +644,8 @@ describe("lib/trace", () => {
             `,
             "another-one": {
               // Should use _index_ and not package.json
+              // TODO(13) Optimization: Verify `another-one/package.json` is not included
+              // https://github.com/FormidableLabs/trace-deps/issues/13
               "index.js": "module.exports = 'another one';",
               "package.json": stringify({
                 description: "should be not included because it points to a bad path",
