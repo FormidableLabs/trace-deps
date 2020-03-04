@@ -78,7 +78,9 @@ describe("lib/trace", () => {
 
       expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
         "node_modules/one/index.js",
-        "node_modules/two/index.js"
+        "node_modules/one/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
       ]));
     });
 
@@ -120,8 +122,11 @@ describe("lib/trace", () => {
 
       expect(await traceFile({ srcPath: "hi.mjs" })).to.eql(fullPath([
         "node_modules/one/index.mjs",
+        "node_modules/one/package.json",
         "node_modules/three/index.mjs",
-        "node_modules/two/index.mjs"
+        "node_modules/three/package.json",
+        "node_modules/two/index.mjs",
+        "node_modules/two/package.json"
       ]));
     });
 
@@ -176,8 +181,12 @@ describe("lib/trace", () => {
       expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
         "node_modules/one/index.js",
         "node_modules/one/node_modules/sub-dep-one/index.js",
+        "node_modules/one/node_modules/sub-dep-one/package.json",
+        "node_modules/one/package.json",
         "node_modules/sub-dep-flattened-two/index.js",
-        "node_modules/two/index.js"
+        "node_modules/sub-dep-flattened-two/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
       ]));
     });
 
@@ -229,9 +238,13 @@ describe("lib/trace", () => {
 
       expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
         "node_modules/one/index.js",
+        "node_modules/one/package.json",
         "node_modules/three/index.mjs",
         "node_modules/three/node_modules/nested-three/index.mjs",
-        "node_modules/two/index.js"
+        "node_modules/three/node_modules/nested-three/package.json",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
       ]));
     });
 
@@ -323,7 +336,9 @@ describe("lib/trace", () => {
 
       expect(await traceFile({ srcPath: "nested/path/hi.js" })).to.eql(fullPath([
         "nested/node_modules/one/index.js",
-        "node_modules/two/index.js"
+        "nested/node_modules/one/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
       ]));
     });
 
@@ -439,37 +454,6 @@ describe("lib/trace", () => {
           "does-exist-shouldnt-import"
         ]
       })).to.eql(fullPath([
-        "node_modules/one/index.js",
-        "node_modules/two/index.js"
-      ]));
-    });
-
-    it("handles requires with arguments", async () => {
-      mock({
-        "hi.js": `
-          const one = require("one")();
-          require("two")("my message for two");
-
-          const variableDep = "shouldnt-find";
-          require(variableDep)();
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = () => 'one';"
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = (msg) => `two :${msg}`;"
-          }
-        }
-      });
-
-      expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
         "node_modules/one/index.js",
         "node_modules/two/index.js"
       ]));
@@ -610,6 +594,71 @@ describe("lib/trace", () => {
         "node_modules/one/index.mjs",
         "node_modules/three/index.mjs",
         "node_modules/two/index.mjs"
+      ]));
+    });
+
+    it.only("handles requires with arguments and local libs", async () => {
+      mock({
+        "hi.js": "module.exports = require('./ho');",
+        "ho.js": `
+          const one = require("one");
+          require("two")("my message for two");
+
+          const variableDep = "shouldnt-find";
+          require(variableDep)();
+        `,
+        "package.json": stringify({
+          description: "should be unused",
+          main: "hi.js"
+        }),
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = {
+                another: require("./another-one"),
+                andMore: require("./and-more")
+              };
+            `,
+            "another-one": {
+              // Should use _index_ and not package.json
+              "index.js": "module.exports = 'another one';",
+              "package.json": stringify({
+                description: "should be not included because it points to a bad path",
+                main: "bad-path.js"
+              })
+            },
+            "and-more": {
+              // Should use _diff-path_ and include package.json
+              "diff-path.js": "module.exports = 'one more';",
+              "package.json": stringify({
+                description: "should be included because it points to a good path",
+                main: "diff-path.js"
+              })
+            }
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = (msg) => `two :${msg}`;"
+          }
+        }
+      });
+
+      expect(await traceFiles({ srcPaths: ["hi.js"] })).to.eql(fullPath([
+        "ho.js",
+        "node_modules/one/and-more/diff-path.js",
+        "node_modules/one/and-more/package.json",
+        "node_modules/one/another-one/index.js",
+        "node_modules/one/another-one/package.json", // TODO: Shouldn't be here.
+        "node_modules/one/index.js",
+        "node_modules/one/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json",
+        "package.json" // TODO: Shouldn't be here.
       ]));
     });
   });
