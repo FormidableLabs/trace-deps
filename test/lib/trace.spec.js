@@ -300,9 +300,13 @@ describe("lib/trace", () => {
 
       expect(await traceFile({ srcPath: "hi.mjs" })).to.eql(fullPath([
         "node_modules/nested-flattened-three/index.mjs",
+        "node_modules/nested-flattened-three/package.json",
         "node_modules/one/index.mjs",
+        "node_modules/one/package.json",
         "node_modules/three/index.mjs",
-        "node_modules/two/index.mjs"
+        "node_modules/three/package.json",
+        "node_modules/two/index.mjs",
+        "node_modules/two/package.json"
       ]));
     });
 
@@ -399,9 +403,13 @@ describe("lib/trace", () => {
 
       expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
         "node_modules/four/index.js",
+        "node_modules/four/package.json",
         "node_modules/one/index.js",
+        "node_modules/one/package.json",
         "node_modules/three/index.js",
-        "node_modules/two/index.js"
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
       ]));
     });
 
@@ -455,7 +463,9 @@ describe("lib/trace", () => {
         ]
       })).to.eql(fullPath([
         "node_modules/one/index.js",
-        "node_modules/two/index.js"
+        "node_modules/one/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
       ]));
     });
   });
@@ -527,9 +537,13 @@ describe("lib/trace", () => {
         "second.js"
       ] })).to.eql(fullPath([
         "node_modules/one/index.js",
+        "node_modules/one/package.json",
         "node_modules/three/index.mjs",
         "node_modules/three/node_modules/nested-three/index.mjs",
-        "node_modules/two/index.js"
+        "node_modules/three/node_modules/nested-three/package.json",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
       ]));
     });
 
@@ -591,13 +605,17 @@ describe("lib/trace", () => {
         "second.mjs"
       ] })).to.eql(fullPath([
         "node_modules/nested-flattened-three/index.mjs",
+        "node_modules/nested-flattened-three/package.json",
         "node_modules/one/index.mjs",
+        "node_modules/one/package.json",
         "node_modules/three/index.mjs",
-        "node_modules/two/index.mjs"
+        "node_modules/three/package.json",
+        "node_modules/two/index.mjs",
+        "node_modules/two/package.json"
       ]));
     });
 
-    it.only("handles requires with arguments and local libs", async () => {
+    it("handles requires with arguments and local libs", async () => {
       mock({
         "hi.js": "module.exports = require('./ho');",
         "ho.js": `
@@ -653,12 +671,12 @@ describe("lib/trace", () => {
         "node_modules/one/and-more/diff-path.js",
         "node_modules/one/and-more/package.json",
         "node_modules/one/another-one/index.js",
-        "node_modules/one/another-one/package.json", // TODO: Shouldn't be here.
+        "node_modules/one/another-one/package.json",
         "node_modules/one/index.js",
         "node_modules/one/package.json",
         "node_modules/two/index.js",
         "node_modules/two/package.json",
-        "package.json" // TODO: Shouldn't be here.
+        "package.json"
       ]));
     });
   });
