@@ -443,6 +443,37 @@ describe("lib/trace", () => {
         "node_modules/two/index.js"
       ]));
     });
+
+    it("handles requires with arguments", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one")();
+          require("two")("my message for two");
+
+          const variableDep = "shouldnt-find";
+          require(variableDep)();
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = () => 'one';"
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = (msg) => `two :${msg}`;"
+          }
+        }
+      });
+
+      expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/two/index.js"
+      ]));
+    });
   });
 
   describe("traceFiles", () => {
