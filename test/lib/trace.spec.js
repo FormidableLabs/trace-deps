@@ -134,10 +134,10 @@ describe("lib/trace", () => {
     it("handles re-exports with .mjs", async () => {
       mock({
         "hi.mjs": `
-          export { one as oneVar } from "one";
-          export { two } from "two";
-          export * as three from "three";
-          export * from "four";
+          export { one } from "one";
+          export { two as twoVar } from "two";
+          export * from "three";
+          export * as four from "four";
         `,
         node_modules: {
           one: {
