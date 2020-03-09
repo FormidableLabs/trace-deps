@@ -130,6 +130,62 @@ describe("lib/trace", () => {
       ]));
     });
 
+
+    it("handles re-exports with .mjs", async () => {
+      mock({
+        "hi.mjs": `
+          export { one } from "one";
+          export { two as twoVar } from "two";
+          export * from "three";
+          export * as four from "four";
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": "export const one = 'one';"
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": "export const two = 'two';"
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": `
+              const threeNum = 3;
+              const threeStr = 'three';
+              export { threeNum, threeStr };
+            `
+          },
+          four: {
+            "package.json": stringify({
+              main: "index.mjs"
+            }),
+            "index.mjs": `
+              const four = 'four';
+              export default four;
+            `
+          }
+        }
+      });
+
+      expect(await traceFile({ srcPath: "hi.mjs" })).to.eql(fullPath([
+        "node_modules/four/index.mjs",
+        "node_modules/four/package.json",
+        "node_modules/one/index.mjs",
+        "node_modules/one/package.json",
+        "node_modules/three/index.mjs",
+        "node_modules/three/package.json",
+        "node_modules/two/index.mjs",
+        "node_modules/two/package.json"
+      ]));
+    });
+
     it("handles nested requires with .js", async () => {
       mock({
         "hi.js": `

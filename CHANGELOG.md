@@ -1,6 +1,11 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Feature: Add `export *|{} from` ESM support.
+  [#9](https://github.com/FormidableLabs/trace-deps/issues/9)
+
 ## 0.2.0
 
 * Bug: Include `package.json` files that are needed for Node.js resolution.
