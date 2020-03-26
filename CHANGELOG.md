@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.2.2
 
 * Upgrade `node-acorn` to `^2.0.0`.
 
