@@ -525,13 +525,12 @@ describe("lib/trace", () => {
       ]));
     });
 
-    // TODO(19): Reenable and implement support.
-    it.skip("handles try/catch missing requires", async () => {
+    it("handles try/catch missing requires", async () => {
       mock({
         "hi.js": `
           require("one");
 
-          const { aFunction } = require("nested-trycatch-require");
+          const { aFunction } = require("nested-first-level");
           const { aFile } = require("nested-trycatch-requireresolve");
         `,
         node_modules: {
@@ -540,8 +539,6 @@ describe("lib/trace", () => {
               main: "index.js"
             }),
             "index.js": `
-              require("doesnt-exist");
-
               module.exports = {
                 one: () => "one",
                 two: () => require("two").two
@@ -558,6 +555,20 @@ describe("lib/trace", () => {
               };
             `
           },
+          "nested-first-level": {
+            "package.json": stringify({
+              main: "lib/index.js"
+            }),
+            lib: {
+              "index.js": `
+                const { aFunction } = require("nested-trycatch-require");
+
+                module.exports = {
+                  aFunction
+                };
+              `
+            }
+          },
           "nested-trycatch-require": {
             "package.json": stringify({
               main: "index.js"
@@ -565,7 +576,7 @@ describe("lib/trace", () => {
             "index.js": `
               let aFunction;
               try {
-                aFunction = () => import("doesnt-exist");
+                aFunction = () => import("doesnt-exist/with/path.js");
               } catch (err) {
                 aFunction = () => null;
               }
@@ -592,8 +603,20 @@ describe("lib/trace", () => {
       });
 
       expect(await traceFile({
-        srcPath: "hi.js"
+        srcPath: "hi.js",
+        allowMissing: {
+          "nested-trycatch-require": [
+            "doesnt-exist"
+          ],
+          "nested-trycatch-requireresolve": [
+            "also-doesnt-exist"
+          ]
+        }
       })).to.eql(fullPath([
+        "node_modules/nested-first-level/lib/index.js",
+        "node_modules/nested-first-level/package.json",
+        "node_modules/nested-trycatch-require/index.js",
+        "node_modules/nested-trycatch-require/package.json",
         "node_modules/nested-trycatch-requireresolve/index.js",
         "node_modules/nested-trycatch-requireresolve/package.json",
         "node_modules/one/index.js",
