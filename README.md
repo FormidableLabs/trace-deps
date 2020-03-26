@@ -27,7 +27,9 @@ Trace and return on-disk locations of all file dependencies from a source file.
 _Parameters_:
 
 * `srcPath` (`string`): source file path to trace
-* `ignores` (`Array<string>`): list of package prefixes to ignore
+* `ignores` (`Array<string>`): list of package prefixes to ignore tracing entirely
+* `allowMissing` (`Object<string, Array<string>`): Mapping of package prefixes to permitted
+  missing module prefixes.
 
 _Returns_:
 
@@ -41,6 +43,8 @@ _Parameters_:
 
 * `srcPaths` (`Array<string>`): source file paths to trace
 * `ignores` (`Array<string>`): list of package prefixes to ignore
+* `allowMissing` (`Object<string, Array<string>`): Mapping of package prefixes to permitted
+  missing module prefixes.
 
 _Returns_:
 

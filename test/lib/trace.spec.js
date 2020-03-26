@@ -525,17 +525,14 @@ describe("lib/trace", () => {
       ]));
     });
 
-    it("handles try/catch missing requires", async () => {
+    // TODO(19): Reenable and implement support.
+    it.skip("handles try/catch missing requires", async () => {
       mock({
         "hi.js": `
           require("one");
 
-          let noFunction;
-          try {
-            noFunction = () => import("doesnt-exist");
-          } catch (err) {}
-
-          const aFile = require("nested-trycatch-requireresolve");
+          const { aFunction } = require("nested-trycatch-require");
+          const { aFile } = require("nested-trycatch-requireresolve");
         `,
         node_modules: {
           one: {
@@ -561,6 +558,21 @@ describe("lib/trace", () => {
               };
             `
           },
+          "nested-trycatch-require": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              let aFunction;
+              try {
+                aFunction = () => import("doesnt-exist");
+              } catch (err) {
+                aFunction = () => null;
+              }
+
+              module.exports = { aFunction };
+            `
+          },
           "nested-trycatch-requireresolve": {
             "package.json": stringify({
               main: "index.js"
@@ -574,6 +586,8 @@ describe("lib/trace", () => {
               module.exports = { noFile };
             `
           }
+
+
         }
       });
 
@@ -588,6 +602,8 @@ describe("lib/trace", () => {
         "node_modules/two/package.json"
       ]));
     });
+
+    it("still errors on missing imports in a catch"); // TODO(19)
   });
 
   describe("traceFiles", () => {
