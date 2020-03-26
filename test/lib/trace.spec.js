@@ -524,6 +524,70 @@ describe("lib/trace", () => {
         "node_modules/two/package.json"
       ]));
     });
+
+    it("handles try/catch missing requires", async () => {
+      mock({
+        "hi.js": `
+          require("one");
+
+          let noFunction;
+          try {
+            noFunction = () => import("doesnt-exist");
+          } catch (err) {}
+
+          const aFile = require("nested-trycatch-requireresolve");
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              require("doesnt-exist");
+
+              module.exports = {
+                one: () => "one",
+                two: () => require("two").two
+              };
+            `
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = {
+                two: () => "two"
+              };
+            `
+          },
+          "nested-trycatch-requireresolve": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              let noFile = null;
+              try {
+                noFile = require.resolve("also-doesnt-exist");
+              } catch (err) {}
+
+              module.exports = { noFile };
+            `
+          }
+        }
+      });
+
+      expect(await traceFile({
+        srcPath: "hi.js"
+      })).to.eql(fullPath([
+        "node_modules/nested-trycatch-requireresolve/index.js",
+        "node_modules/nested-trycatch-requireresolve/package.json",
+        "node_modules/one/index.js",
+        "node_modules/one/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
+    });
   });
 
   describe("traceFiles", () => {
