@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Upgrade `node-acorn` to `^2.0.0`.
+
 ## 0.2.1
 
 * Feature: Add `export *|{} from` ESM support.
