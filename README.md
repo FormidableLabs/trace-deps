@@ -76,7 +76,7 @@ _Returns_:
     })
     ```
 
-* **`ignores` vs. `allowMissing`**: The `ignores` option completely skips a dependency from being further traversed irrespective of whether or not a matching dependency exists on disk. The `allowMissing` option will include and further traverse dependencies that are present on disk if found, and suppress any errors upon hitting a matching missing dependency.
+* **`ignores` vs. `allowMissing`**: The `ignores` option completely skips a dependency from being further traversed irrespective of whether or not a matching dependency exists on disk. The `allowMissing` option will include and further traverse dependencies that are present on disk if found and suppress any errors for matches that are missing.
 
 [npm_img]: https://badge.fury.io/js/trace-deps.svg
 [npm_site]: http://badge.fury.io/js/trace-deps
