@@ -597,8 +597,6 @@ describe("lib/trace", () => {
               module.exports = { noFile };
             `
           }
-
-
         }
       });
 
@@ -629,33 +627,9 @@ describe("lib/trace", () => {
     it("still errors on missing imports in a catch", async () => {
       mock({
         "hi.js": `
-          require("one");
-
           const { aFunction } = require("nested-first-level");
-          const { aFile } = require("nested-trycatch-requireresolve");
         `,
         node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                one: () => "one",
-                two: () => require("two").two
-              };
-            `
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                two: () => "two"
-              };
-            `
-          },
           "nested-first-level": {
             "package.json": stringify({
               main: "lib/index.js"
@@ -684,22 +658,7 @@ describe("lib/trace", () => {
 
               module.exports = { aFunction };
             `
-          },
-          "nested-trycatch-requireresolve": {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              let noFile = null;
-              try {
-                noFile = require.resolve("also-doesnt-exist");
-              } catch (err) {}
-
-              module.exports = { noFile };
-            `
           }
-
-
         }
       });
 
@@ -709,9 +668,6 @@ describe("lib/trace", () => {
           "nested-first-level": [
             // This won't be a permitted missing because only `nested-trycatch-require` is checked.
             "doesnt-exist"
-          ],
-          "nested-trycatch-requireresolve": [
-            "also-doesnt-exist"
           ]
         }
       })).to.be.rejectedWith(
