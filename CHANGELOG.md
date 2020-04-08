@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Bug: Search for `index.json` files when no `package.json:main` is specified.
+
 ## 0.2.3
 
 * Bug/Feature: Allow permissive handling of try/catch `require`s with `allowMissing` parameter.
