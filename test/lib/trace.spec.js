@@ -1,5 +1,7 @@
 "use strict";
 
+/* eslint-disable max-statements */
+
 const path = require("path");
 const mock = require("mock-fs");
 
@@ -673,6 +675,52 @@ describe("lib/trace", () => {
       })).to.be.rejectedWith(
         /Encountered resolution error in .*nested-trycatch-require.* for doesnt-exist.*/
       );
+    });
+
+    it("handles missing package.json:main and index.json", async () => {
+      mock({
+        "hi.js": `
+          require("one");
+          require("two");
+          require("three");
+        `,
+        node_modules: {
+          // `resolve()` can handle this straight up.
+          one: {
+            "package.json": stringify({
+              main: "index.json"
+            }),
+            "index.json": JSON.stringify([
+              "one",
+              "1"
+            ])
+          },
+          // `resolve()` **can't** handle this.
+          two: {
+            "package.json": stringify({
+            }),
+            "index.json": JSON.stringify([
+              "two",
+              "2"
+            ])
+          },
+          // `resolve()` can handle this straight up.
+          three: {
+            "package.json": stringify({
+            }),
+            "index.js": "module.exports = 'three';"
+          }
+        }
+      });
+
+      expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
+        "node_modules/one/index.json",
+        "node_modules/one/package.json",
+        "node_modules/three/index.js",
+        "node_modules/three/package.json",
+        "node_modules/two/index.json",
+        "node_modules/two/package.json"
+      ]));
     });
   });
 
