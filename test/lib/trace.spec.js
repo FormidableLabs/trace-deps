@@ -1,5 +1,7 @@
 "use strict";
 
+/* eslint-disable max-statements */
+
 const path = require("path");
 const mock = require("mock-fs");
 
@@ -690,7 +692,7 @@ describe("lib/trace", () => {
             }),
             "index.json": JSON.stringify([
               "one",
-              1
+              "1"
             ])
           },
           // `resolve()` **can't** handle this.
@@ -699,7 +701,7 @@ describe("lib/trace", () => {
             }),
             "index.json": JSON.stringify([
               "two",
-              2
+              "2"
             ])
           },
           // `resolve()` can handle this straight up.
