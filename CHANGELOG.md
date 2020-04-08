@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.2.4
 
 * Bug: Search for `index.json` files when no `package.json:main` is specified.
 
