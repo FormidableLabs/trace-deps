@@ -65,6 +65,9 @@ describe("lib/trace", () => {
 
           const variableResolve = "also-shouldnt-find";
           require.resolve(variableResolve);
+          require.resolve(\`interpolated_\${variableDep}\`);
+          require.resolve("binary" + "-expression");
+          require.resolve("binary" + variableDep);
         `,
         node_modules: {
           one: {
@@ -264,13 +267,17 @@ describe("lib/trace", () => {
       mock({
         "hi.js": `
           const one = require("one");
-          const dynamicTwo = () => import("two");
+          const dynamicTwo = () => import(\`two\`);
 
           (async () => {
             await import("three");
 
             const variableDep = "shouldnt-find";
             await import(variableDep);
+            await import(variableResolve);
+            await import(\`interpolated_\${variableDep}\`);
+            await import("binary" + "-expression");
+            await import("binary" + variableDep);
           })();
         `,
         node_modules: {
