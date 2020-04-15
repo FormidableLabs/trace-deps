@@ -1,6 +1,12 @@
 Changes
 =======
 
+## UNRELEASED
+
+* TODO
+  [#25](https://github.com/FormidableLabs/trace-deps/issues/25)
+* Feature: Add inference for template literal strings.
+
 ## 0.2.4
 
 * Bug: Search for `index.json` files when no `package.json:main` is specified.

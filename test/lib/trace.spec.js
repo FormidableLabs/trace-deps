@@ -55,9 +55,13 @@ describe("lib/trace", () => {
         "hi.js": `
           const one = require("one");
           require("two");
+          require(\`three\`);
 
           const variableDep = "shouldnt-find";
           require(variableDep);
+          require(\`interpolated_\${variableDep}\`);
+          require("binary" + "-expression");
+          require("binary" + variableDep);
 
           const variableResolve = "also-shouldnt-find";
           require.resolve(variableResolve);
@@ -74,6 +78,12 @@ describe("lib/trace", () => {
               main: "index.js"
             }),
             "index.js": "module.exports = 'two';"
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = 'three';"
           }
         }
       });
@@ -81,6 +91,8 @@ describe("lib/trace", () => {
       expect(await traceFile({ srcPath: "hi.js" })).to.eql(fullPath([
         "node_modules/one/index.js",
         "node_modules/one/package.json",
+        "node_modules/three/index.js",
+        "node_modules/three/package.json",
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
@@ -722,6 +734,15 @@ describe("lib/trace", () => {
         "node_modules/two/package.json"
       ]));
     });
+
+    // TODO(misses): require(`foo`);
+    // TODO(misses): require(`foo_${A_VAR}`);
+    // TODO(misses): require("foo_" + A_VAR);
+    // TODO(misses): require(A_VAR + "bar");
+    // TODO(misses): require("foo_" + "bar");
+    //
+    // TODO(misses): ALL REQUIRES but for `require.resolve()`
+    // TODO(misses): ALL REQUIRES but for `import()`
   });
 
   describe("traceFiles", () => {
