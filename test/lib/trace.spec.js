@@ -11,6 +11,16 @@ const INDENT = 2;
 const stringify = (val) => JSON.stringify(val, null, INDENT);
 const fullPath = (paths) => paths.map((p) => path.resolve(p));
 
+// Convert misses to single file source.
+const missesSrcs = ({ misses, srcPath }) => {
+  const srcFullPath = path.resolve(srcPath);
+  expect(misses).has.property(srcFullPath).that.is.an("array");
+  expect(Object.keys(misses)).to.have.length(1);
+  expect(misses[srcFullPath][0]).to.have.keys("start", "end", "loc", "src");
+
+  return misses[srcFullPath].map(({ src }) => src);
+};
+
 describe("lib/trace", () => {
   beforeEach(() => {
     mock({});
@@ -104,10 +114,7 @@ describe("lib/trace", () => {
         "node_modules/two/package.json"
       ]));
 
-      const srcFullPath = path.resolve(srcPath);
-      expect(misses).has.property(srcFullPath).that.is.an("array");
-      expect(misses[srcFullPath][0]).to.have.keys("start", "end", "loc", "src");
-      expect(misses[srcFullPath].map(({ src }) => src)).to.eql([
+      expect(missesSrcs({ misses, srcPath })).to.eql([
         "require(variableDep)",
         "require(`interpolated_${variableDep}`)",
         "require(\"binary\" + \"-expression\")",
@@ -164,8 +171,8 @@ describe("lib/trace", () => {
         "node_modules/two/index.mjs",
         "node_modules/two/package.json"
       ]));
+      expect(misses).to.eql({});
     });
-
 
     it("handles re-exports with .mjs", async () => {
       mock({
@@ -221,6 +228,7 @@ describe("lib/trace", () => {
         "node_modules/two/index.mjs",
         "node_modules/two/package.json"
       ]));
+      expect(misses).to.eql({});
     });
 
     it("handles nested requires with .js", async () => {
@@ -282,6 +290,7 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
+      expect(misses).to.eql({});
     });
 
     it("handles dynamic imports with .js", async () => {
@@ -334,7 +343,8 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
+      const srcPath = "hi.js";
+      const { dependencies, misses } = await traceFile({ srcPath });
       expect(dependencies).to.eql(fullPath([
         "node_modules/one/index.js",
         "node_modules/one/package.json",
@@ -345,6 +355,13 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
+      expect(missesSrcs({ misses, srcPath })).to.eql([
+        "import(variableDep)",
+        "import(variableResolve)",
+        "import(`interpolated_${variableDep}`)",
+        "import(\"binary\" + \"-expression\")",
+        "import(\"binary\" + variableDep)"
+      ]);
     });
 
     it("handles dynamic imports with .mjs", async () => {
