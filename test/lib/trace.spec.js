@@ -414,7 +414,8 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
+      const srcPath = "hi.mjs";
+      const { dependencies, misses } = await traceFile({ srcPath });
       expect(dependencies).to.eql(fullPath([
         "node_modules/nested-flattened-three/index.mjs",
         "node_modules/nested-flattened-three/package.json",
@@ -425,6 +426,9 @@ describe("lib/trace", () => {
         "node_modules/two/index.mjs",
         "node_modules/two/package.json"
       ]));
+      expect(missesSrcs({ misses, srcPath })).to.eql([
+        "import(variableDep)"
+      ]);
     });
 
     it("handles lower directories than where file is located", async () => {
@@ -462,6 +466,7 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
+      expect(misses).to.eql({});
     });
 
     it("handles circular dependencies", async () => {
@@ -530,6 +535,7 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
+      expect(misses).to.eql({});
     });
 
     it("ignores specified names and prefixes", async () => {
@@ -587,6 +593,7 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
+      expect(misses).to.eql({});
     });
 
     it("handles try/catch misses requires", async () => {
@@ -687,6 +694,7 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
+      expect(misses).to.eql({});
     });
 
     it("still errors on missing imports in a catch", async () => {
@@ -785,16 +793,10 @@ describe("lib/trace", () => {
         "node_modules/two/index.json",
         "node_modules/two/package.json"
       ]));
+      expect(misses).to.eql({});
     });
 
-    // TODO(misses): require(`foo`);
-    // TODO(misses): require(`foo_${A_VAR}`);
-    // TODO(misses): require("foo_" + A_VAR);
-    // TODO(misses): require(A_VAR + "bar");
-    // TODO(misses): require("foo_" + "bar");
-    //
-    // TODO(misses): ALL REQUIRES but for `require.resolve()`
-    // TODO(misses): ALL REQUIRES but for `import()`
+    it("reports on complex, nested misses"); // TODO
   });
 
   describe("traceFiles", () => {
@@ -1015,5 +1017,7 @@ describe("lib/trace", () => {
         "package.json"
       ]));
     });
+
+    it("reports on complex, nested misses"); // TODO
   });
 });
