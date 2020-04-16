@@ -67,9 +67,9 @@ describe("lib/trace", () => {
 
           const variableResolve = "also-shouldnt-find";
           require.resolve(variableResolve);
-          require.resolve(\`interpolated_\${variableDep}\`);
+          require.resolve(\`interpolated_\${variableResolve}\`);
           require.resolve("binary" + "-expression");
-          require.resolve("binary" + variableDep);
+          require.resolve("binary" + variableResolve);
         `,
         node_modules: {
           one: {
@@ -93,7 +93,8 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
+      const srcPath = "hi.js";
+      const { dependencies, misses } = await traceFile({ srcPath });
       expect(dependencies).to.eql(fullPath([
         "node_modules/one/index.js",
         "node_modules/one/package.json",
@@ -102,6 +103,20 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
+
+      const srcFullPath = path.resolve(srcPath);
+      expect(misses).has.property(srcFullPath).that.is.an("array");
+      expect(misses[srcFullPath][0]).to.have.keys("start", "end", "loc", "src");
+      expect(misses[srcFullPath].map(({ src }) => src)).to.eql([
+        "require(variableDep)",
+        "require(`interpolated_${variableDep}`)",
+        "require(\"binary\" + \"-expression\")",
+        "require(\"binary\" + variableDep)",
+        "require.resolve(variableResolve)",
+        "require.resolve(`interpolated_${variableResolve}`)",
+        "require.resolve(\"binary\" + \"-expression\")",
+        "require.resolve(\"binary\" + variableResolve)"
+      ]);
     });
 
     it("handles imports with .mjs", async () => {
