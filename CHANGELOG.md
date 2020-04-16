@@ -5,12 +5,12 @@ Changes
 
 **Breaking**
 
-* Feature: Change `traceFile|traceFiles` signature to `{ dependencies, misses }` and report imports that cannot be traced.
+* Feature: Change `traceFile|traceFiles` return object shape to `{ dependencies, misses }` to include imports that cannot be traced.
   [#25](https://github.com/FormidableLabs/trace-deps/issues/25)
 
 **Features**
 
-* Feature: Add inference for template literal strings in imports.
+* Feature: Add tracing for template literal strings in imports (e.g., ``require(`tmpl-str`)``).
 
 ## 0.2.4
 
