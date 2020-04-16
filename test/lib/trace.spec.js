@@ -1140,6 +1140,105 @@ describe("lib/trace", () => {
       }));
     });
 
-    it("reports on complex, nested misses"); // TODO
+
+    it("reports on complex, nested misses", async () => {
+      mock({
+        "first.js": `
+          const one = require("one");
+          require("two");
+        `,
+        "second.js": `
+          require('./root-more');
+        `,
+        "root-more.js": `
+          require(\`three\`);
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              const more = require("./more");
+              const variableDep = "shouldnt-find-one";
+              const fn = () => require(variableDep);
+
+              module.exports = 'one';
+            `,
+            "more.js": `
+              require(\`interpolated_\${variableDep}\`);
+              require("binary" + "-expression");
+              require("binary" + variableDep);
+              module.exports = "one-more";
+            `
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = 'two';"
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = require('three-more');",
+            node_modules: {
+              "three-more": {
+                "package.json": stringify({
+                  main: "index.js"
+                }),
+                "index.js": "module.exports = require('./more');",
+                "more.js": `
+                  const variableResolve = "also-shouldnt-find";
+                  require.resolve(variableResolve);
+                  require.resolve(\`interpolated_\${variableResolve}\`);
+                  require.resolve("binary" + "-expression");
+                  require.resolve("binary" + variableResolve);
+
+                  module.exports = 'three-more-more!';
+                `
+              }
+            }
+          }
+        }
+      });
+
+      const srcPaths = [
+        "first.js",
+        "second.js"
+      ];
+      const { dependencies, misses } = await traceFiles({ srcPaths });
+      expect(dependencies).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/one/more.js",
+        "node_modules/one/package.json",
+        "node_modules/three/index.js",
+        "node_modules/three/node_modules/three-more/index.js",
+        "node_modules/three/node_modules/three-more/more.js",
+        "node_modules/three/node_modules/three-more/package.json",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json",
+        "root-more.js"
+      ]));
+
+      expect(missesMap({ misses })).to.be.eql(resolveObjKeys({
+        "node_modules/one/index.js": [
+          "require(variableDep)"
+        ],
+        "node_modules/one/more.js": [
+          "require(`interpolated_${variableDep}`)",
+          "require(\"binary\" + \"-expression\")",
+          "require(\"binary\" + variableDep)"
+        ],
+        "node_modules/three/node_modules/three-more/more.js": [
+          "require.resolve(variableResolve)",
+          "require.resolve(`interpolated_${variableResolve}`)",
+          "require.resolve(\"binary\" + \"-expression\")",
+          "require.resolve(\"binary\" + variableResolve)"
+        ]
+      }));
+    });
   });
 });
