@@ -803,6 +803,7 @@ describe("lib/trace", () => {
     it("handles empty sources list", async () => {
       const { dependencies, misses } = await traceFiles({ srcPaths: [] });
       expect(dependencies).to.eql([]);
+      expect(misses).to.eql({});
     });
 
     it("handles no dependencies", async () => {
@@ -812,6 +813,7 @@ describe("lib/trace", () => {
 
       const { dependencies, misses } = await traceFiles({ srcPaths: ["hi.js"] });
       expect(dependencies).to.eql([]);
+      expect(misses).to.eql({});
     });
 
     it("handles dynamic imports with .js", async () => {
@@ -877,6 +879,9 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
+      expect(missesSrcs({ misses, srcPath: "second.js" })).to.eql([
+        "import(variableDep)"
+      ]);
     });
 
     it("handles dynamic imports with .mjs", async () => {
@@ -946,6 +951,9 @@ describe("lib/trace", () => {
         "node_modules/two/index.mjs",
         "node_modules/two/package.json"
       ]));
+      expect(missesSrcs({ misses, srcPath: "second.mjs" })).to.eql([
+        "import(variableDep)"
+      ]);
     });
 
     it("handles requires with arguments and local libs", async () => {
@@ -1016,6 +1024,9 @@ describe("lib/trace", () => {
         "node_modules/two/package.json",
         "package.json"
       ]));
+      expect(missesSrcs({ misses, srcPath: "ho.js" })).to.eql([
+        "require(variableDep)"
+      ]);
     });
 
     it("reports on complex, nested misses"); // TODO
