@@ -47,8 +47,9 @@ describe("lib/trace", () => {
         "hi.js": "module.exports = 'hi';"
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "hi.js" });
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
       expect(dependencies).to.eql([]);
+      expect(misses).to.eql({});
     });
 
     it("handles requires with .js", async () => {
@@ -92,7 +93,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "hi.js" });
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/one/index.js",
         "node_modules/one/package.json",
@@ -139,7 +140,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "hi.mjs" });
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/one/index.mjs",
         "node_modules/one/package.json",
@@ -194,7 +195,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "hi.mjs" });
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/four/index.mjs",
         "node_modules/four/package.json",
@@ -255,7 +256,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "hi.js" });
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/one/index.js",
         "node_modules/one/node_modules/sub-dep-one/index.js",
@@ -318,7 +319,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "hi.js" });
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/one/index.js",
         "node_modules/one/package.json",
@@ -381,7 +382,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "hi.mjs" });
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/nested-flattened-three/index.mjs",
         "node_modules/nested-flattened-three/package.json",
@@ -422,7 +423,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "nested/path/hi.js" });
+      const { dependencies, misses } = await traceFile({ srcPath: "nested/path/hi.js" });
       expect(dependencies).to.eql(fullPath([
         "nested/node_modules/one/index.js",
         "nested/node_modules/one/package.json",
@@ -486,7 +487,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "hi.js" });
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/four/index.js",
         "node_modules/four/package.json",
@@ -541,7 +542,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({
+      const { dependencies, misses } = await traceFile({
         srcPath: "hi.js",
         ignores: [
           "doesnt-exist",
@@ -556,7 +557,7 @@ describe("lib/trace", () => {
       ]));
     });
 
-    it("handles try/catch missing requires", async () => {
+    it("handles try/catch misses requires", async () => {
       mock({
         "hi.js": `
           require("one");
@@ -631,7 +632,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({
+      const { dependencies, misses } = await traceFile({
         srcPath: "hi.js",
         allowMissing: {
           "nested-trycatch-require": [
@@ -743,7 +744,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFile({ srcPath: "hi.js" });
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/one/index.json",
         "node_modules/one/package.json",
@@ -766,7 +767,7 @@ describe("lib/trace", () => {
 
   describe("traceFiles", () => {
     it("handles empty sources list", async () => {
-      const { dependencies, missing } = await traceFiles({ srcPaths: [] });
+      const { dependencies, misses } = await traceFiles({ srcPaths: [] });
       expect(dependencies).to.eql([]);
     });
 
@@ -775,7 +776,7 @@ describe("lib/trace", () => {
         "hi.js": "module.exports = 'hi';"
       });
 
-      const { dependencies, missing } = await traceFiles({ srcPaths: ["hi.js"] });
+      const { dependencies, misses } = await traceFiles({ srcPaths: ["hi.js"] });
       expect(dependencies).to.eql([]);
     });
 
@@ -828,7 +829,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFiles({ srcPaths: [
+      const { dependencies, misses } = await traceFiles({ srcPaths: [
         "first.js",
         "second.js"
       ] });
@@ -897,7 +898,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFiles({ srcPaths: [
+      const { dependencies, misses } = await traceFiles({ srcPaths: [
         "first.mjs",
         "second.mjs"
       ] });
@@ -968,7 +969,7 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, missing } = await traceFiles({ srcPaths: ["hi.js"] });
+      const { dependencies, misses } = await traceFiles({ srcPaths: ["hi.js"] });
       expect(dependencies).to.eql(fullPath([
         "ho.js",
         "node_modules/one/and-more/diff-path.js",
