@@ -33,7 +33,18 @@ _Parameters_:
 
 _Returns_:
 
-* (`Promise<Array<string>>`): list of absolute paths to on-disk dependencies
+* (`Promise<Object>`): Dependencies and other information.
+    * `dependencies` (`Array<string>`): list of absolute paths to on-disk dependencies
+    * `missing` (`Object.<string, Array<Object>`): Mapping of file absolute paths on disk to an array of imports that `trace-deps` was **not** able to resolve (dynamic requires, etc.). The object contained in the value array is structured as follows:
+        * `src` (`string`): The source code snippet of the import in question (e.g., `"require(A_VAR)"`)
+        * `start`, `end` (`number`): The starting / ending character indexes in the source code string corresponding to the source file.
+        * `loc` (`Object`): Line / column information for the code string at issue taking the form:
+            ```js
+            {
+              start: { line: Number, column: Number},
+              end:   { line: Number, column: Number}
+            }
+            ```
 
 ### `traceFiles({ srcPaths, ignores })`
 
@@ -48,7 +59,7 @@ _Parameters_:
 
 _Returns_:
 
-* (`Promise<Array<string>>`): list of absolute paths to on-disk dependencies
+* (`Promise<Object>`): Dependencies and other information. See `traceFile()` for object shape.
 
 ## Notes
 
