@@ -16,16 +16,6 @@ const resolveObjKeys = (obj) => Object.entries(obj)
   .map(([key, val]) => [path.resolve(key), val])
   .reduce((memo, [key, val]) => ({ ...memo, [key]: val }), {});
 
-// Convert misses to single file source.
-const missesSrcs = ({ misses, srcPath }) => {
-  const srcFullPath = path.resolve(srcPath);
-  expect(misses).has.property(srcFullPath).that.is.an("array");
-  expect(Object.keys(misses)).to.have.length(1);
-  expect(misses[srcFullPath][0]).to.have.keys("start", "end", "loc", "src");
-
-  return misses[srcFullPath].map(({ src }) => src);
-};
-
 // Convert to map of sources.
 const missesMap = ({ misses }) => Object.entries(misses)
   .map(([key, objs]) => {
@@ -134,16 +124,18 @@ describe("lib/trace", () => {
         "node_modules/two/package.json"
       ]));
 
-      expect(missesSrcs({ misses, srcPath })).to.eql([
-        "require(variableDep)",
-        "require(`interpolated_${variableDep}`)",
-        "require(\"binary\" + \"-expression\")",
-        "require(\"binary\" + variableDep)",
-        "require.resolve(variableResolve)",
-        "require.resolve(`interpolated_${variableResolve}`)",
-        "require.resolve(\"binary\" + \"-expression\")",
-        "require.resolve(\"binary\" + variableResolve)"
-      ]);
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        [srcPath]: [
+          "require(variableDep)",
+          "require(`interpolated_${variableDep}`)",
+          "require(\"binary\" + \"-expression\")",
+          "require(\"binary\" + variableDep)",
+          "require.resolve(variableResolve)",
+          "require.resolve(`interpolated_${variableResolve}`)",
+          "require.resolve(\"binary\" + \"-expression\")",
+          "require.resolve(\"binary\" + variableResolve)"
+        ]
+      }));
     });
 
     it("handles imports with .mjs", async () => {
@@ -375,13 +367,15 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
-      expect(missesSrcs({ misses, srcPath })).to.eql([
-        "import(variableDep)",
-        "import(variableResolve)",
-        "import(`interpolated_${variableDep}`)",
-        "import(\"binary\" + \"-expression\")",
-        "import(\"binary\" + variableDep)"
-      ]);
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        [srcPath]: [
+          "import(variableDep)",
+          "import(variableResolve)",
+          "import(`interpolated_${variableDep}`)",
+          "import(\"binary\" + \"-expression\")",
+          "import(\"binary\" + variableDep)"
+        ]
+      }));
     });
 
     it("handles dynamic imports with .mjs", async () => {
@@ -446,9 +440,11 @@ describe("lib/trace", () => {
         "node_modules/two/index.mjs",
         "node_modules/two/package.json"
       ]));
-      expect(missesSrcs({ misses, srcPath })).to.eql([
-        "import(variableDep)"
-      ]);
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        [srcPath]: [
+          "import(variableDep)"
+        ]
+      }));
     });
 
     it("handles lower directories than where file is located", async () => {
@@ -988,9 +984,11 @@ describe("lib/trace", () => {
         "node_modules/two/index.js",
         "node_modules/two/package.json"
       ]));
-      expect(missesSrcs({ misses, srcPath: "second.js" })).to.eql([
-        "import(variableDep)"
-      ]);
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        "second.js": [
+          "import(variableDep)"
+        ]
+      }));
     });
 
     it("handles dynamic imports with .mjs", async () => {
@@ -1060,9 +1058,11 @@ describe("lib/trace", () => {
         "node_modules/two/index.mjs",
         "node_modules/two/package.json"
       ]));
-      expect(missesSrcs({ misses, srcPath: "second.mjs" })).to.eql([
-        "import(variableDep)"
-      ]);
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        "second.mjs": [
+          "import(variableDep)"
+        ]
+      }));
     });
 
     it("handles requires with arguments and local libs", async () => {
@@ -1133,9 +1133,11 @@ describe("lib/trace", () => {
         "node_modules/two/package.json",
         "package.json"
       ]));
-      expect(missesSrcs({ misses, srcPath: "ho.js" })).to.eql([
-        "require(variableDep)"
-      ]);
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        "ho.js": [
+          "require(variableDep)"
+        ]
+      }));
     });
 
     it("reports on complex, nested misses"); // TODO
