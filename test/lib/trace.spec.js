@@ -11,6 +11,11 @@ const INDENT = 2;
 const stringify = (val) => JSON.stringify(val, null, INDENT);
 const fullPath = (paths) => paths.map((p) => path.resolve(p));
 
+// Resolve file paths in keys to OS-native.
+const resolveObjKeys = (obj) => Object.entries(obj)
+  .map(([key, val]) => [path.resolve(key), val])
+  .reduce((memo, [key, val]) => ({ ...memo, [key]: val }), {});
+
 // Convert misses to single file source.
 const missesSrcs = ({ misses, srcPath }) => {
   const srcFullPath = path.resolve(srcPath);
@@ -20,6 +25,21 @@ const missesSrcs = ({ misses, srcPath }) => {
 
   return misses[srcFullPath].map(({ src }) => src);
 };
+
+// Convert to map of sources.
+const missesMap = ({ misses }) => Object.entries(misses)
+  .map(([key, objs]) => {
+    // Test and mutate.
+    const srcs = objs.map((obj, i) => {
+      const msg = `Entry(${i}): ${key}, val: ${JSON.stringify(obj)}`;
+      expect(obj, msg).to.have.keys("start", "end", "loc", "src");
+
+      return obj.src;
+    });
+
+    return [key, srcs];
+  })
+  .reduce((memo, [key, srcs]) => ({ ...memo, [key]: srcs }), {});
 
 describe("lib/trace", () => {
   beforeEach(() => {
@@ -796,7 +816,96 @@ describe("lib/trace", () => {
       expect(misses).to.eql({});
     });
 
-    it("reports on complex, nested misses"); // TODO
+    it("reports on complex, nested misses", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one");
+          require("two");
+          require(\`three\`);
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              const more = require("./more");
+              const variableDep = "shouldnt-find-one";
+              const fn = () => require(variableDep);
+
+              module.exports = 'one';
+            `,
+            "more.js": `
+              require(\`interpolated_\${variableDep}\`);
+              require("binary" + "-expression");
+              require("binary" + variableDep);
+              module.exports = "one-more";
+            `
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = 'two';"
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = require('three-more');",
+            node_modules: {
+              "three-more": {
+                "package.json": stringify({
+                  main: "index.js"
+                }),
+                "index.js": "module.exports = require('./more');",
+                "more.js": `
+                  const variableResolve = "also-shouldnt-find";
+                  require.resolve(variableResolve);
+                  require.resolve(\`interpolated_\${variableResolve}\`);
+                  require.resolve("binary" + "-expression");
+                  require.resolve("binary" + variableResolve);
+
+                  module.exports = 'three-more-more!';
+                `
+              }
+            }
+          }
+        }
+      });
+
+      const srcPath = "hi.js";
+      const { dependencies, misses } = await traceFile({ srcPath });
+      expect(dependencies).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/one/more.js",
+        "node_modules/one/package.json",
+        "node_modules/three/index.js",
+        "node_modules/three/node_modules/three-more/index.js",
+        "node_modules/three/node_modules/three-more/more.js",
+        "node_modules/three/node_modules/three-more/package.json",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
+
+      expect(missesMap({ misses })).to.be.eql(resolveObjKeys({
+        "node_modules/one/index.js": [
+          "require(variableDep)"
+        ],
+        "node_modules/one/more.js": [
+          "require(`interpolated_${variableDep}`)",
+          "require(\"binary\" + \"-expression\")",
+          "require(\"binary\" + variableDep)"
+        ],
+        "node_modules/three/node_modules/three-more/more.js": [
+          "require.resolve(variableResolve)",
+          "require.resolve(`interpolated_${variableResolve}`)",
+          "require.resolve(\"binary\" + \"-expression\")",
+          "require.resolve(\"binary\" + variableResolve)"
+        ]
+      }));
+    });
   });
 
   describe("traceFiles", () => {
