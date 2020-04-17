@@ -1,6 +1,17 @@
 Changes
 =======
 
+## UNRELEASED
+
+**Breaking**
+
+* Feature: Change `traceFile|traceFiles` return object shape to `{ dependencies, misses }` to include imports that cannot be traced.
+  [#25](https://github.com/FormidableLabs/trace-deps/issues/25)
+
+**Features**
+
+* Feature: Add tracing for template literal strings in imports (e.g., ``require(`tmpl-str`)``).
+
 ## 0.2.4
 
 * Bug: Search for `index.json` files when no `package.json:main` is specified.

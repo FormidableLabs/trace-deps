@@ -21,7 +21,8 @@ describe("index", () => {
         "exported.js": "module.exports = 'exported';"
       });
 
-      expect(await traceFile({ srcPath: "exported.js" })).to.eql([]);
+      const { dependencies } = await traceFile({ srcPath: "exported.js" });
+      expect(dependencies).to.eql([]);
     });
   });
 
@@ -31,7 +32,8 @@ describe("index", () => {
         "exported.js": "module.exports = 'exported';"
       });
 
-      expect(await traceFiles({ srcPaths: ["exported.js"] })).to.eql([]);
+      const { dependencies } = await traceFiles({ srcPaths: ["exported.js"] });
+      expect(dependencies).to.eql([]);
     });
   });
 });
