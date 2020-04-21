@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.3.1
 
 * Chore: Minor internal refactor.
 
