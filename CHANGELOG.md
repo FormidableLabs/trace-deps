@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Chore: Minor internal refactor.
+
 ## 0.3.0
 
 **Breaking**

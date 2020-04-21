@@ -559,6 +559,8 @@ describe("lib/trace", () => {
         "hi.js": `
           require("one");
           const nope = () => import("doesnt-exist");
+          const nestedNope = () => import("doesnt-exist-nested/one/two");
+          const nestedMore = () => import("doesnt-exist-nested/one/even/more.js");
           require.resolve("does-exist-shouldnt-import/index");
         `,
         node_modules: {
@@ -600,6 +602,7 @@ describe("lib/trace", () => {
         srcPath: "hi.js",
         ignores: [
           "doesnt-exist",
+          "doesnt-exist-nested/one",
           "does-exist-shouldnt-import"
         ]
       });
@@ -668,6 +671,8 @@ describe("lib/trace", () => {
                 aFunction = () => null;
               }
 
+              const nested = require("doesnt-exist-nested/one/more.js");
+
               module.exports = { aFunction };
             `
           },
@@ -691,7 +696,8 @@ describe("lib/trace", () => {
         srcPath: "hi.js",
         allowMissing: {
           "nested-trycatch-require": [
-            "doesnt-exist"
+            "doesnt-exist",
+            "doesnt-exist-nested/one"
           ],
           "nested-trycatch-requireresolve": [
             "also-doesnt-exist"
