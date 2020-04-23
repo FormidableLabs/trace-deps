@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Feature/Bug: More permissively parse JS code using `module` Acorn type first, with fallback to `script`.
+
 ## 0.3.1
 
 * Chore: Minor internal refactor.

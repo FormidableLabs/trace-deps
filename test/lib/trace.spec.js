@@ -908,6 +908,50 @@ describe("lib/trace", () => {
         ]
       }));
     });
+
+    it("errors on syntax errors", async () => {
+      mock({
+        "hi.js": `
+          UN;&!PARSEABLE
+        `
+      });
+
+      const srcPath = "hi.js";
+      await expect(traceFile({ srcPath })).to.be.rejectedWith(
+        /Encountered parse error in .* SyntaxError: Unexpected token/
+      );
+    });
+
+    it("handles already declared identifier code", async () => {
+      mock({
+        "hi.js": `
+          var foo = foo;
+
+          function foo() { return "Wow, this is valid!"; }
+
+          require("one");
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = 'one';
+            `
+          }
+        }
+      });
+
+      const srcPath = "hi.js";
+      const { dependencies, misses } = await traceFile({ srcPath });
+      expect(dependencies).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/one/package.json"
+      ]));
+
+      expect(missesMap({ misses })).to.be.eql({});
+    });
   });
 
   describe("traceFiles", () => {
