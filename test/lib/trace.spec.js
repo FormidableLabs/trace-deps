@@ -909,6 +909,19 @@ describe("lib/trace", () => {
       }));
     });
 
+    it("errors on syntax errors", async () => {
+      mock({
+        "hi.js": `
+          UN;&!PARSEABLE
+        `
+      });
+
+      const srcPath = "hi.js";
+      await expect(traceFile({ srcPath })).to.be.rejectedWith(
+        /Encountered parse error in .* SyntaxError: Unexpected token/
+      );
+    });
+
     it("handles already declared identifier code", async () => {
       mock({
         "hi.js": `
