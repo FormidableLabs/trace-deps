@@ -3,7 +3,7 @@ Changes
 
 ## UNRELEASED
 
-* Bug: Handle code with `Identifier 'NAME' has already been declared` parse errors.
+* Feature/Bug: More permissively parse JS code using `module` Acorn type first, with fallback to `script`.
 
 ## 0.3.1
 
