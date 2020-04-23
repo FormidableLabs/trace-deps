@@ -908,6 +908,37 @@ describe("lib/trace", () => {
         ]
       }));
     });
+
+    it("handles already declared identifier code", async () => {
+      mock({
+        "hi.js": `
+          var foo = foo;
+
+          function foo() { return "Wow, this is valid!"; }
+
+          require("one");
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = 'one';
+            `
+          }
+        }
+      });
+
+      const srcPath = "hi.js";
+      const { dependencies, misses } = await traceFile({ srcPath });
+      expect(dependencies).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/one/package.json"
+      ]));
+
+      expect(missesMap({ misses })).to.be.eql({});
+    });
   });
 
   describe("traceFiles", () => {

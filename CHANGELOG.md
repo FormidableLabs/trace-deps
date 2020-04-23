@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Bug: Handle code with `Identifier 'NAME' has already been declared` parse errors.
+
 ## 0.3.1
 
 * Chore: Minor internal refactor.
