@@ -30,6 +30,7 @@ _Parameters_:
 * `ignores` (`Array<string>`): list of package prefixes to ignore tracing entirely
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted
   missing module prefixes.
+* `extraImports` (`Object.<string, Array<string>`): Mapping of files to additional imports to trace. Key is in the form either a (1) absolute path to a source file (e.g., `/PATH/TO/src/foo.js`) or (2) relative path to a file from a package in `node_modules` starting at the package name (e.g. `lodash/index.js`). Value is an array of additional import specifiers that are resolved and further traced. The additional imports are anything that could be validly passed to a `require()` or `import` call.
 
 _Returns_:
 
@@ -56,6 +57,7 @@ _Parameters_:
 * `ignores` (`Array<string>`): list of package prefixes to ignore
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted
   missing module prefixes.
+  * `extraImports` (`Object.<string, Array<string>`): Mapping of files to additional imports to trace.
 
 _Returns_:
 
