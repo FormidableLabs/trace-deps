@@ -78,19 +78,19 @@ describe("lib/package", () => {
     it("handles single modules", () => {
       expect(getLastPackageSegment(normalize("node_modules/bar"))).to.eql("bar");
       expect(getLastPackageSegment(normalize("node_modules/bar/src/foo.js")))
-        .to.eql("bar/src/foo.js");
+        .to.eql(normalize("bar/src/foo.js"));
       expect(getLastPackageSegment(normalize("path/to/node_modules/@scope/foo")))
-        .to.eql("@scope/foo");
+        .to.eql(normalize("@scope/foo"));
       expect(getLastPackageSegment(normalize("path/to/node_modules/@scope/foo/index.js")))
-        .to.eql("@scope/foo/index.js");
+        .to.eql(normalize("@scope/foo/index.js"));
     });
 
     it("handles nested modules", () => {
       expect(getLastPackageSegment(normalize("node_modules/bar/node_modules/@scope/nested-bar")))
-        .to.eql("@scope/nested-bar");
+        .to.eql(normalize("@scope/nested-bar"));
       expect(getLastPackageSegment(
         normalize("node_modules/bar/node_modules/@scope/nested-bar/path/to/nested.js")
-      )).to.eql("@scope/nested-bar/path/to/nested.js");
+      )).to.eql(normalize("@scope/nested-bar/path/to/nested.js"));
     });
   });
 });
