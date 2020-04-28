@@ -1001,6 +1001,27 @@ describe("lib/trace", () => {
                 two: () => "two"
               };
             `
+          },
+          "extra-package-app": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = "Not directly imported via extraImports";
+            `,
+            nested: {
+              "path.js": `
+                module.exports = "Directly imported via extraImports";
+              `
+            }
+          },
+          "extra-package-one": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = "Directly imported via extraImports";
+            `
           }
         }
       });
@@ -1008,16 +1029,26 @@ describe("lib/trace", () => {
       const { dependencies, misses } = await traceFile({
         srcPath: "hi.js",
         extraImports: {
+          // Absolute path, so application source file with **full match**
+          [path.resolve("./lib/middle/ho.js")]: [
+            "lib/extra/file.js",
+            "extra-pkg-app/nested/path.js"
+          ],
+          // Package, so relative match after _last_ `node_modules`.
+          "one/lib/nested/deeper-one.js": [
+            "extra-pkg-one"
+          ]
           // TODO: ADD AND TEST
-          // TODO: ./lib/middle/ho.js -> lib/extra/file.js
-          // TODO: ./lib/middle/ho.js -> extra-pkg-app/nested/path.js
-          // TODO: one/lib/nested/deeper-one -> extra-pkg-one
           // TODO: **another** extraImport for something added by extra import?
-          //       Like a nested path in `extra-pkg-one`
+          //       Like a nested path in `extra-pkg-one` + a bare package name.
         }
       });
       expect(dependencies).to.eql(fullPath([
         "lib/middle/ho.js",
+        "lib/extra/file.js",
+        "node_modules/extra-pkg-app/nested/path.js",
+        "node_modules/extra-pkg-one/index.js",
+        "node_modules/extra-pkg-one/package.json",
         "node_modules/one/index.js",
         "node_modules/one/lib/nested/deeper-one.js",
         "node_modules/one/package.json",
