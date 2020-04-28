@@ -957,11 +957,15 @@ describe("lib/trace", () => {
       mock({
         "hi.js": `
           require("./lib/middle/ho");
+          require("./lib/middle/how");
           require("one");
         `,
         lib: {
           middle: {
             "ho.js": `
+              module.exports = "No actual missing imports";
+            `,
+            "how.js": `
               module.exports = "No actual missing imports";
             `
           },
@@ -1038,9 +1042,14 @@ describe("lib/trace", () => {
         srcPath: "hi.js",
         extraImports: {
           // Absolute path, so application source file with **full match**
+          // Use native path.
           [path.resolve("./lib/middle/ho.js")]: [
             "../extra/file",
             "extra-pkg-app/nested/path"
+          ],
+          // Use posix path.
+          "./lib/middle/how.js": [
+            "../extra/file2"
           ],
           // Package, so relative match after _last_ `node_modules`.
           "one/lib/nested/deeper-one.js": [
@@ -1056,6 +1065,7 @@ describe("lib/trace", () => {
       expect(dependencies).to.eql(fullPath([
         "lib/extra/file.js",
         "lib/middle/ho.js",
+        "lib/middle/how.js",
         "node_modules/extra-pkg-app/nested/path.js",
         "node_modules/extra-pkg-app/package.json",
         "node_modules/extra-pkg-from-extra-import/index.js",

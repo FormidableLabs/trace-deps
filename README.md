@@ -31,10 +31,11 @@ _Parameters_:
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted
   missing module prefixes.
 * `extraImports` (`Object.<string, Array<string>`): Mapping of files to additional imports to trace.
-    * The **key** is in the form of either:
+    * The **key** is path (either Posix or native OS paths are accepted) in the form of either:
         1. an **absolute** path to a source file (e.g., `/PATH/TO/src/foo.js`), or;
         2. a **relative** path to a file from a package in `node_modules` starting at the package name (e.g. `lodash/index.js`).
     * The **value** is an array of additional import specifiers that are resolved and further traced. The additional imports are anything that could be validly passed to a `require()` or `import` call (e.g., `./relative/path/to/source-file.js`, `a-pkg`, `a-pkg/with/nested/path.js`).
+        * Paths should be specified as you would in a Node.js `require()` which is to say Posix `/` form.
 
 _Returns_:
 
