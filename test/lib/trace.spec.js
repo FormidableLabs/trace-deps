@@ -1039,8 +1039,8 @@ describe("lib/trace", () => {
         extraImports: {
           // Absolute path, so application source file with **full match**
           [path.resolve("./lib/middle/ho.js")]: [
-            "../extra/file.js",
-            "extra-pkg-app/nested/path.js"
+            "../extra/file",
+            "extra-pkg-app/nested/path"
           ],
           // Package, so relative match after _last_ `node_modules`.
           "one/lib/nested/deeper-one.js": [
