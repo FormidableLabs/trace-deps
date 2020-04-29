@@ -1046,12 +1046,12 @@ describe("lib/trace", () => {
         extraImports: {
           // Absolute path, so application source file with **full match**
           // Use win32 path.
-          [path.win32.resolve("./lib/middle/ho.js")]: [
+          [path.resolve(".\\lib\\middle\\ho.js")]: [
             "../extra/file",
             "extra-pkg-app/nested/path"
           ],
           // Use posix path.
-          [path.posix.resolve("./lib/middle/how.js")]: [
+          [path.resolve("./lib/middle/how.js")]: [
             "../extra/file2"
           ],
           // Package, so relative match after _last_ `node_modules`.
