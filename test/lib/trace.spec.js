@@ -972,6 +972,9 @@ describe("lib/trace", () => {
           extra: {
             "file.js": `
               module.exports = "Not imported directly";
+            `,
+            "file2.js": `
+              module.exports = "Not imported directly";
             `
           }
         },
@@ -1042,13 +1045,13 @@ describe("lib/trace", () => {
         srcPath: "hi.js",
         extraImports: {
           // Absolute path, so application source file with **full match**
-          // Use native path.
-          [path.resolve("./lib/middle/ho.js")]: [
+          // Use win32 path.
+          [path.win32.resolve("./lib/middle/ho.js")]: [
             "../extra/file",
             "extra-pkg-app/nested/path"
           ],
           // Use posix path.
-          "./lib/middle/how.js": [
+          [path.posix.resolve("./lib/middle/how.js")]: [
             "../extra/file2"
           ],
           // Package, so relative match after _last_ `node_modules`.
@@ -1064,6 +1067,7 @@ describe("lib/trace", () => {
       });
       expect(dependencies).to.eql(fullPath([
         "lib/extra/file.js",
+        "lib/extra/file2.js",
         "lib/middle/ho.js",
         "lib/middle/how.js",
         "node_modules/extra-pkg-app/nested/path.js",
