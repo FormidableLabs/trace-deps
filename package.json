@@ -1,6 +1,6 @@
 {
   "name": "trace-deps",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "A dependency tracing tool.",
   "main": "index.js",
   "repository": "https://github.com/FormidableLabs/trace-deps",
