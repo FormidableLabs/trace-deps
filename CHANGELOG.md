@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Feature: Add `extraImports` parameter to `traceFile`/`traceFiles`.
+
 ## 0.3.2
 
 * Feature/Bug: More permissively parse JS code using `module` Acorn type first, with fallback to `script`.

@@ -952,6 +952,142 @@ describe("lib/trace", () => {
 
       expect(missesMap({ misses })).to.be.eql({});
     });
+
+    it("adds extraImports", async () => {
+      mock({
+        "hi.js": `
+          require("./lib/middle/ho");
+          require("./lib/middle/how");
+          require("one");
+        `,
+        lib: {
+          middle: {
+            "ho.js": `
+              module.exports = "No actual missing imports";
+            `,
+            "how.js": `
+              module.exports = "No actual missing imports";
+            `
+          },
+          extra: {
+            "file.js": `
+              module.exports = "Not imported directly";
+            `,
+            "file2.js": `
+              module.exports = "Not imported directly";
+            `
+          }
+        },
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              require("./lib/nested/deeper-one");
+
+              module.exports = {
+                one: () => "one",
+                two: () => require("two").two
+              };
+            `,
+            lib: {
+              nested: {
+                "deeper-one.js": `
+                  module.exports = require(process.env.MISSING_DYNAMIC_IMPORT);
+                `
+              }
+            }
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = {
+                two: () => "two"
+              };
+            `
+          },
+          "extra-pkg-app": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = "Not directly imported via extraImports";
+            `,
+            nested: {
+              "path.js": `
+                module.exports = "Directly imported via extraImports";
+              `
+            }
+          },
+          "extra-pkg-one": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = "Directly imported via extraImports";
+            `
+          },
+          "extra-pkg-from-extra-import": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = "An extraImports bring this one in!";
+            `
+          }
+        }
+      });
+
+      const { dependencies, misses } = await traceFile({
+        srcPath: "hi.js",
+        extraImports: {
+          // Absolute path, so application source file with **full match**
+          // Use win32 path.
+          [path.resolve(".\\lib\\middle\\ho.js")]: [
+            "../extra/file",
+            "extra-pkg-app/nested/path"
+          ],
+          // Use posix path.
+          [path.resolve("./lib/middle/how.js")]: [
+            "../extra/file2"
+          ],
+          // Package, so relative match after _last_ `node_modules`.
+          "one/lib/nested/deeper-one.js": [
+            "extra-pkg-one"
+          ],
+          // Package from the **above** extra import! Should also get traversed
+          // same as the other ones...
+          "extra-pkg-one/index.js": [
+            "extra-pkg-from-extra-import"
+          ]
+        }
+      });
+      expect(dependencies).to.eql(fullPath([
+        "lib/extra/file.js",
+        "lib/extra/file2.js",
+        "lib/middle/ho.js",
+        "lib/middle/how.js",
+        "node_modules/extra-pkg-app/nested/path.js",
+        "node_modules/extra-pkg-app/package.json",
+        "node_modules/extra-pkg-from-extra-import/index.js",
+        "node_modules/extra-pkg-from-extra-import/package.json",
+        "node_modules/extra-pkg-one/index.js",
+        "node_modules/extra-pkg-one/package.json",
+        "node_modules/one/index.js",
+        "node_modules/one/lib/nested/deeper-one.js",
+        "node_modules/one/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        "node_modules/one/lib/nested/deeper-one.js": [
+          "require(process.env.MISSING_DYNAMIC_IMPORT)"
+        ]
+      }));
+    });
   });
 
   describe("traceFiles", () => {
@@ -1189,7 +1325,6 @@ describe("lib/trace", () => {
         ]
       }));
     });
-
 
     it("reports on complex, nested misses", async () => {
       mock({
