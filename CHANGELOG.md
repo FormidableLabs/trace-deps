@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.3.3
 
 * Feature: Add `extraImports` parameter to `traceFile`/`traceFiles`.
 
