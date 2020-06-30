@@ -14,7 +14,7 @@ const fullPath = (paths) => paths.map((p) => path.resolve(p));
 // Resolve file paths in keys to OS-native.
 const resolveObjKeys = (obj) => Object.entries(obj)
   .map(([key, val]) => [path.resolve(key), val])
-  .reduce((memo, [key, val]) => ({ ...memo, [key]: val }), {});
+  .reduce((memo, [key, val]) => Object.assign(memo, { [key]: val }), {});
 
 // Convert to map of sources.
 const missesMap = ({ misses }) => Object.entries(misses)
@@ -29,7 +29,7 @@ const missesMap = ({ misses }) => Object.entries(misses)
 
     return [key, srcs];
   })
-  .reduce((memo, [key, srcs]) => ({ ...memo, [key]: srcs }), {});
+  .reduce((memo, [key, srcs]) => Object.assign(memo, { [key]: srcs }), {});
 
 describe("lib/trace", () => {
   beforeEach(() => {
