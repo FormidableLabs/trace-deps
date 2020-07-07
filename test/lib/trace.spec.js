@@ -330,6 +330,8 @@ describe("lib/trace", () => {
                 "index.cjs": `
                   require("./full-path-with-ext.cjs");
                   require("./path-with-no-ext");
+                  require("./a-json-file-implied-ext");
+                  require("./a-json-file-with-ext.json");
                   module.exports = 'one';
                 `,
                 "full-path-with-ext.cjs": `
@@ -337,7 +339,13 @@ describe("lib/trace", () => {
                 `,
                 "path-with-no-ext": `
                   module.exports = 'path-with-no-ext';
-                `
+                `,
+                "a-json-file-implied-ext.json": stringify({
+                  msg: "implied extension"
+                }),
+                "a-json-file-with-ext.json": stringify({
+                  msg: "with extension"
+                })
               }
             }
           },
@@ -364,6 +372,8 @@ describe("lib/trace", () => {
       const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/one/index.js",
+        "node_modules/one/node_modules/sub-dep-one/a-json-file-implied-ext.json",
+        "node_modules/one/node_modules/sub-dep-one/a-json-file-with-ext.json",
         "node_modules/one/node_modules/sub-dep-one/full-path-with-ext.cjs",
         "node_modules/one/node_modules/sub-dep-one/index.cjs",
         "node_modules/one/node_modules/sub-dep-one/package.json",
