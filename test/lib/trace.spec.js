@@ -305,7 +305,7 @@ describe("lib/trace", () => {
       expect(misses).to.eql({});
     });
 
-    it("handles nested requires with .js and .cjs extensions", async () => {
+    it("handles requires with .js, .cjs, and no extensions", async () => {
       mock({
         "hi.js": `
           const one = require("one");
@@ -328,7 +328,15 @@ describe("lib/trace", () => {
                   main: "index.cjs"
                 }),
                 "index.cjs": `
+                  require("./full-path-with-ext.cjs");
+                  require("./path-with-no-ext");
                   module.exports = 'one';
+                `,
+                "full-path-with-ext.cjs": `
+                  module.exports = 'full-path-with-ext';
+                `,
+                "path-with-no-ext": `
+                  module.exports = 'path-with-no-ext';
                 `
               }
             }
@@ -356,8 +364,10 @@ describe("lib/trace", () => {
       const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
       expect(dependencies).to.eql(fullPath([
         "node_modules/one/index.js",
+        "node_modules/one/node_modules/sub-dep-one/full-path-with-ext.cjs",
         "node_modules/one/node_modules/sub-dep-one/index.cjs",
         "node_modules/one/node_modules/sub-dep-one/package.json",
+        "node_modules/one/node_modules/sub-dep-one/path-with-no-ext",
         "node_modules/one/package.json",
         "node_modules/sub-dep-flattened-two/index.cjs",
         "node_modules/sub-dep-flattened-two/package.json",
