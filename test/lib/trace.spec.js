@@ -305,6 +305,68 @@ describe("lib/trace", () => {
       expect(misses).to.eql({});
     });
 
+    it("handles nested requires with .js and .cjs extensions", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one");
+          if (one === "one") {
+            require.resolve("two");
+          }
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              const subDepOne = require("sub-dep-one");
+              module.exports = 'one';
+            `,
+            node_modules: {
+              "sub-dep-one": {
+                "package.json": stringify({
+                  main: "index.cjs"
+                }),
+                "index.cjs": `
+                  module.exports = 'one';
+                `
+              }
+            }
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              const subDepTwo = require("sub-dep-flattened-two");
+              module.exports = subDepTwo;
+            `
+          },
+          "sub-dep-flattened-two": {
+            "package.json": stringify({
+              main: "index.cjs"
+            }),
+            "index.cjs": `
+              module.exports = 'two';
+            `
+          }
+        }
+      });
+
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
+      expect(dependencies).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/one/node_modules/sub-dep-one/index.cjs",
+        "node_modules/one/node_modules/sub-dep-one/package.json",
+        "node_modules/one/package.json",
+        "node_modules/sub-dep-flattened-two/index.cjs",
+        "node_modules/sub-dep-flattened-two/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
+      expect(misses).to.eql({});
+    });
+
     it("handles dynamic imports with .js", async () => {
       mock({
         "hi.js": `
