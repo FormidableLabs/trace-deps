@@ -28,15 +28,16 @@ const missesMap = ({ misses }) => Object.entries(misses)
 
       if (obj.type === "dynamic") {
         expect(obj, msg).to.have.keys("start", "end", "loc", "src", "type");
+        return obj.src;
       } else if (obj.type === "static") {
         expect(obj, msg).to.have.keys("dep", "start", "end", "loc", "src", "type");
+        return obj.dep;
       } else if (obj.type === "extra") {
         expect(obj, msg).to.have.keys("dep", "type");
-      } else {
-        throw new Error(`Unknown object type: ${JSON.stringify(obj)}`);
+        return obj.dep;
       }
 
-      return obj.src;
+      throw new Error(`Unknown object type: ${JSON.stringify(obj)}`);
     });
 
     return [key, srcs];
@@ -74,6 +75,27 @@ describe("lib/trace", () => {
       );
     });
 
+    it("throws on nonexistent extra dependency", async () => {
+      mock({
+        "hi.js": "module.exports = require('./ho');",
+        "ho.js": "module.exports = 'ho';"
+      });
+
+      await expect(traceFile({
+        srcPath: "hi.js",
+        extraImports: {
+          // Absolute path, so application source file with **full match**
+          // Use win32 path.
+          [path.resolve("ho.js")]: [
+            "extra-is-missing"
+          ]
+        }
+      })).to.be.rejectedWith(
+        `Encountered resolution error in ${path.resolve("ho.js")} for extra-is-missing: `
+        + `Error: Cannot find module 'extra-is-missing' from '${path.resolve(".")}'`
+      );
+    });
+
     it("handles nonexistent dependency with bailOnMissing=false", async () => {
       mock({
         "hi.js": "require('doesnt-exist');"
@@ -85,15 +107,42 @@ describe("lib/trace", () => {
         bailOnMissing: false
       });
 
-      expect(dependencies).to.eql([]);
+      expect(dependencies).to.eql(fullPath([]));
       expect(missesMap({ misses })).to.eql(resolveObjKeys({
         [srcPath]: [
-          "require('doesnt-exist')"
+          "doesnt-exist"
         ]
       }));
     });
 
-    it("handles nonexistent extra dependency with bailOnMissing=false"); // TODO: IMPLEMENT
+    it("handles nonexistent extra dependency with bailOnMissing=false", async () => {
+      mock({
+        "hi.js": "module.exports = require('./ho');",
+        "ho.js": "module.exports = 'ho';"
+      });
+
+      const srcPath = "hi.js";
+      const { dependencies, misses } = await traceFile({
+        srcPath,
+        bailOnMissing: false,
+        extraImports: {
+          // Absolute path, so application source file with **full match**
+          // Use win32 path.
+          [path.resolve("ho.js")]: [
+            "extra-is-missing"
+          ]
+        }
+      });
+
+      expect(dependencies).to.eql(fullPath([
+        "ho.js"
+      ]));
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        "ho.js": [
+          "extra-is-missing"
+        ]
+      }));
+    });
 
     it("handles no dependencies", async () => {
       mock({
