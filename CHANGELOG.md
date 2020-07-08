@@ -6,6 +6,11 @@ Changes
 * Feature: Add `trace-deps` CLI.
 * Feature: Add `bailOnMissing` parameter to `traceFile`/`traceFiles`.
 
+## 0.3.4
+
+* Bug: Handle non-`.js|mjs|json` extensions in JS files and parse when directly included. (E.g, `require('./url-alphabet/index.cjs')`).
+* Internal: Misc dependency updates.
+
 ## 0.3.3
 
 * Feature: Add `extraImports` parameter to `traceFile`/`traceFiles`.

@@ -305,6 +305,88 @@ describe("lib/trace", () => {
       expect(misses).to.eql({});
     });
 
+    it("handles requires with .js, .cjs, and no extensions", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one");
+          if (one === "one") {
+            require.resolve("two");
+          }
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              const subDepOne = require("sub-dep-one");
+              module.exports = 'one';
+            `,
+            node_modules: {
+              "sub-dep-one": {
+                "package.json": stringify({
+                  main: "index.cjs"
+                }),
+                "index.cjs": `
+                  require("./full-path-with-ext.cjs");
+                  require("./path-with-no-ext");
+                  require("./a-json-file-implied-ext");
+                  require("./a-json-file-with-ext.json");
+                  module.exports = 'one';
+                `,
+                "full-path-with-ext.cjs": `
+                  module.exports = 'full-path-with-ext';
+                `,
+                "path-with-no-ext": `
+                  module.exports = 'path-with-no-ext';
+                `,
+                "a-json-file-implied-ext.json": stringify({
+                  msg: "implied extension"
+                }),
+                "a-json-file-with-ext.json": stringify({
+                  msg: "with extension"
+                })
+              }
+            }
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              const subDepTwo = require("sub-dep-flattened-two");
+              module.exports = subDepTwo;
+            `
+          },
+          "sub-dep-flattened-two": {
+            "package.json": stringify({
+              main: "index.cjs"
+            }),
+            "index.cjs": `
+              module.exports = 'two';
+            `
+          }
+        }
+      });
+
+      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
+      expect(dependencies).to.eql(fullPath([
+        "node_modules/one/index.js",
+        "node_modules/one/node_modules/sub-dep-one/a-json-file-implied-ext.json",
+        "node_modules/one/node_modules/sub-dep-one/a-json-file-with-ext.json",
+        "node_modules/one/node_modules/sub-dep-one/full-path-with-ext.cjs",
+        "node_modules/one/node_modules/sub-dep-one/index.cjs",
+        "node_modules/one/node_modules/sub-dep-one/package.json",
+        "node_modules/one/node_modules/sub-dep-one/path-with-no-ext",
+        "node_modules/one/package.json",
+        "node_modules/sub-dep-flattened-two/index.cjs",
+        "node_modules/sub-dep-flattened-two/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
+      expect(misses).to.eql({});
+    });
+
     it("handles dynamic imports with .js", async () => {
       mock({
         "hi.js": `
