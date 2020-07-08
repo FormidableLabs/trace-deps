@@ -51,6 +51,11 @@ _Returns_:
               end:   { line: Number, column: Number}
             }
             ```
+        * `type` (`string`): One of the following:
+            * `dynamic`: A dynamic import that `trace-deps` cannot resolve.
+            * `static`: A resolved dependency that was not found.
+            * `extra`: A user-provided `extraImports` static value that was not found.
+        * `dep` (`string`) (_optional_): The dependency value if statically inferred.
 
 ### `traceFiles({ srcPaths, ignores })`
 

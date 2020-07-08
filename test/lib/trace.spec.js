@@ -22,7 +22,7 @@ const missesMap = ({ misses }) => Object.entries(misses)
     // Test and mutate.
     const srcs = objs.map((obj, i) => {
       const msg = `Entry(${i}): ${key}, val: ${JSON.stringify(obj)}`;
-      expect(obj, msg).to.have.keys("start", "end", "loc", "src");
+      expect(obj, msg).to.have.keys("start", "end", "loc", "src", "type");
 
       return obj.src;
     });

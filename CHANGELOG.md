@@ -5,6 +5,7 @@ Changes
 
 * Feature: Add `trace-deps` CLI.
 * Feature: Add `bailOnMissing` parameter to `traceFile`/`traceFiles`.
+* Feature: Add `dep` and `type` fields to `misses` array values returned by `traceFile`/`traceFiles`.
 
 ## 0.3.4
 
