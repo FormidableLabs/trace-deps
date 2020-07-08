@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.3.4
 
 * Bug: Handle non-`.js|mjs|json` extensions in JS files and parse when directly included. (E.g, `require('./url-alphabet/index.cjs')`).
 * Internal: Misc dependency updates.
