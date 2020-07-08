@@ -22,7 +22,19 @@ const missesMap = ({ misses }) => Object.entries(misses)
     // Test and mutate.
     const srcs = objs.map((obj, i) => {
       const msg = `Entry(${i}): ${key}, val: ${JSON.stringify(obj)}`;
-      expect(obj, msg).to.have.keys("start", "end", "loc", "src", "type");
+
+      // Everything has a type.
+      expect(obj, msg).to.include.keys("type");
+
+      if (obj.type === "dynamic") {
+        expect(obj, msg).to.have.keys("start", "end", "loc", "src", "type");
+      } else if (obj.type === "static") {
+        expect(obj, msg).to.have.keys("dep", "start", "end", "loc", "src", "type");
+      } else if (obj.type === "extra") {
+        expect(obj, msg).to.have.keys("dep", "type");
+      } else {
+        throw new Error(`Unknown object type: ${JSON.stringify(obj)}`);
+      }
 
       return obj.src;
     });
@@ -61,6 +73,27 @@ describe("lib/trace", () => {
         + "Error: Cannot find module 'doesnt-exist' from '.'"
       );
     });
+
+    it("handles nonexistent dependency with bailOnMissing=false", async () => {
+      mock({
+        "hi.js": "require('doesnt-exist');"
+      });
+
+      const srcPath = "hi.js";
+      const { dependencies, misses } = await traceFile({
+        srcPath,
+        bailOnMissing: false
+      });
+
+      expect(dependencies).to.eql([]);
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        [srcPath]: [
+          "require('doesnt-exist')"
+        ]
+      }));
+    });
+
+    it("handles nonexistent extra dependency with bailOnMissing=false"); // TODO: IMPLEMENT
 
     it("handles no dependencies", async () => {
       mock({
