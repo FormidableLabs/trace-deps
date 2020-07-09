@@ -25,21 +25,22 @@ describe("bin/trace-deps", () => {
   });
 
   describe("cli", () => {
-    it("shows help with no args", async () => {
-      await cli();
-      expect(logStub).to.be.calledWithMatch("Usage: trace-deps");
-    });
+    describe("basics", () => {
+      it("shows help with no args", async () => {
+        await cli();
+        expect(logStub).to.be.calledWithMatch("Usage: trace-deps");
+      });
 
-    it("shows help with --help", async () => {
-      await cli({ args: ["--help"] });
-      expect(logStub).to.be.calledWithMatch("Usage: trace-deps");
-    });
+      it("shows help with --help", async () => {
+        await cli({ args: ["--help"] });
+        expect(logStub).to.be.calledWithMatch("Usage: trace-deps");
+      });
 
-    it("shows version with -v", async () => {
-      await cli({ args: ["-v"] });
-      expect(logStub).to.be.calledWithMatch(version);
+      it("shows version with -v", async () => {
+        await cli({ args: ["-v"] });
+        expect(logStub).to.be.calledWith(version);
+      });
     });
-
 
     describe("trace", () => {
       it("requires --input"); // TODO
