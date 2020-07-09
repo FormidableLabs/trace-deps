@@ -43,7 +43,16 @@ describe("bin/trace-deps", () => {
     });
 
     describe("trace", () => {
-      it("requires --input"); // TODO
+      it("requires --input", async () => {
+        await expect(cli({ args: ["trace"] }))
+          .to.eventually.be.rejectedWith("Must specify --input file to trace");
+
+        await expect(cli({ args: ["trace", "--input"] }))
+          .to.eventually.be.rejectedWith("Must specify --input file to trace");
+
+        await expect(cli({ args: ["trace", "--input", ""] }))
+          .to.eventually.be.rejectedWith("Must specify --input file to trace");
+      });
       it("errors on non-existent file"); // TODO
       it("handles no dependencies"); // TODO
       it("shows dependencies"); // TODO
