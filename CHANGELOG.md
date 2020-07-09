@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.3.5
 
 * Feature: Add `trace-deps` CLI.
 * Feature: Add `bailOnMissing` parameter to `traceFile`/`traceFiles`.
