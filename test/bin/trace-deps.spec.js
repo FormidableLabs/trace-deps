@@ -12,12 +12,13 @@ const { cli } = require("../../bin/trace-deps");
 
 const INDENT = 2;
 const stringify = (val) => JSON.stringify(val, null, INDENT);
+const normalizePath = (line) => line.replace(
+  /(\/PATH\/TO\/)([^"]*)/,
+  (m, cwd, part) => path.normalize(path.resolve(part))
+);
 const normalizePaths = (str) => str
   .split("\n")
-  .map((line) => line.replace(
-    /(\/PATH\/TO\/)([^"]*)/,
-    (m, cwd, part) => path.normalize(path.resolve(part))
-  ))
+  .map(normalizePath)
   .join("\n");
 
 describe("bin/trace-deps", () => {
@@ -171,7 +172,7 @@ describe("bin/trace-deps", () => {
         });
 
         await cli({ args: ["trace", "-i", "hi.mjs", "-o", "json"] });
-        expect(logStub).to.be.calledWithMatch(normalizePaths(stringify({
+        expect(logStub).to.be.calledWithMatch(stringify({
           dependencies: [
             "/PATH/TO/node_modules/one/index.mjs",
             "/PATH/TO/node_modules/one/package.json",
@@ -179,9 +180,9 @@ describe("bin/trace-deps", () => {
             "/PATH/TO/node_modules/three/package.json",
             "/PATH/TO/node_modules/two/index.mjs",
             "/PATH/TO/node_modules/two/package.json"
-          ],
+          ].map(normalizePath),
           misses: {
-            "/PATH/TO/hi.mjs": [
+            [normalizePath("/PATH/TO/hi.mjs")]: [
               {
                 start: 244,
                 end: 263,
@@ -217,7 +218,7 @@ describe("bin/trace-deps", () => {
               }
             ]
           }
-        })));
+        }));
       });
     });
   });
