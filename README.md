@@ -29,6 +29,7 @@ _Parameters_:
 * `srcPath` (`string`): source file path to trace
 * `ignores` (`Array<string>`): list of package prefixes to ignore tracing entirely
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted missing module prefixes.
+* `bailOnMissing` (`boolean`): Throw error if missing static import. (Default: `true`). If false, misses are added to `misses` object.
 * `extraImports` (`Object.<string, Array<string>`): Mapping of files to additional imports to trace.
     * The **key** is path (either Posix or native OS paths are accepted) in the form of either:
         1. an **absolute** path to a source file (e.g., `/PATH/TO/src/foo.js`), or;
@@ -50,6 +51,11 @@ _Returns_:
               end:   { line: Number, column: Number}
             }
             ```
+        * `type` (`string`): One of the following:
+            * `dynamic`: A dynamic import that `trace-deps` cannot resolve.
+            * `static`: A resolved dependency that was not found.
+            * `extra`: A user-provided `extraImports` static value that was not found.
+        * `dep` (`string`) (_optional_): The dependency value if statically inferred.
 
 ### `traceFiles({ srcPaths, ignores })`
 
@@ -60,11 +66,33 @@ _Parameters_:
 * `srcPaths` (`Array<string>`): source file paths to trace
 * `ignores` (`Array<string>`): list of package prefixes to ignore
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted missing module prefixes.
+* `bailOnMissing` (`boolean`): Throw error if missing static import.
 * `extraImports` (`Object.<string, Array<string>`): Mapping of files to additional imports to trace.
 
 _Returns_:
 
 * (`Promise<Object>`): Dependencies and other information. See `traceFile()` for object shape.
+
+## CLI
+
+`trace-deps` also provides a handy CLI for checking all dependencies and misses imported.
+
+```sh
+$ trace-deps -h
+Usage: trace-deps <action> [options]
+
+Actions: (<action>)
+  trace                     Trace dependencies and misses for a file
+
+Options:
+  --input, -i   (trace)     Starting file to trace              [string]
+  --output, -o  (trace)     Output format (text, json)          [string] [default: text]
+  --help, -h                Show help                           [boolean]
+  --version, -v             Show version number                 [boolean]
+
+Examples:
+  trace-deps trace --input ./path/to/file.js     Trace a source file
+```
 
 ## Notes
 

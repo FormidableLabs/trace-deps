@@ -3,6 +3,9 @@
   "version": "0.3.4",
   "description": "A dependency tracing tool.",
   "main": "index.js",
+  "bin": {
+    "trace-deps": "./bin/trace-deps.js"
+  },
   "repository": "https://github.com/FormidableLabs/trace-deps",
   "author": "Ryan Roemer <ryan.roemer@formidable.com>",
   "license": "MIT",
@@ -40,6 +43,8 @@
     "eslint-plugin-promise": "^4.2.1",
     "mocha": "^8.0.1",
     "mock-fs": "^4.12.0",
-    "nyc": "^15.1.0"
+    "nyc": "^15.1.0",
+    "sinon": "^9.0.2",
+    "sinon-chai": "^3.5.0"
   }
 }

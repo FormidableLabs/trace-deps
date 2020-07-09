@@ -1,6 +1,7 @@
 {
   "include": [
     "*.js",
+    "bin/**/*.js",
     "lib/**/*.js"
   ],
   "reporter": [
