@@ -2,6 +2,7 @@
 
 /* eslint-disable max-statements */
 
+const { version } = require("../../package.json");
 const mock = require("mock-fs");
 const sinon = require("sinon");
 
@@ -29,8 +30,16 @@ describe("bin/trace-deps", () => {
       expect(logStub).to.be.calledWithMatch("Usage: trace-deps");
     });
 
-    it("shows help with --help"); // TODO
-    it("shows version with -v"); // TODO
+    it("shows help with --help", async () => {
+      await cli({ args: ["--help"] });
+      expect(logStub).to.be.calledWithMatch("Usage: trace-deps");
+    });
+
+    it("shows version with -v", async () => {
+      await cli({ args: ["-v"] });
+      expect(logStub).to.be.calledWithMatch(version);
+    });
+
 
     describe("trace", () => {
       it("requires --input"); // TODO
