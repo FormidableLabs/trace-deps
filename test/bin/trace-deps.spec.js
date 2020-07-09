@@ -1,0 +1,43 @@
+"use strict";
+
+/* eslint-disable max-statements */
+
+const mock = require("mock-fs");
+const sinon = require("sinon");
+
+const { cli } = require("../../bin/trace-deps");
+
+describe("bin/trace-deps", () => {
+  let sandbox;
+  let logStub;
+
+  beforeEach(() => {
+    mock({});
+    sandbox = sinon.createSandbox();
+    logStub = sandbox.stub(console, "log");
+    sandbox.stub(console, "error");
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+    mock.restore();
+  });
+
+  describe("cli", () => {
+    it("shows help with no args", async () => {
+      await cli();
+      expect(logStub).to.be.calledWithMatch("Usage: trace-deps");
+    });
+
+    it("shows help with --help"); // TODO
+    it("shows version with -v"); // TODO
+
+    describe("trace", () => {
+      it("requires --input"); // TODO
+      it("errors on non-existent file"); // TODO
+      it("handles no dependencies"); // TODO
+      it("shows dependencies"); // TODO
+      it("shows misses"); // TODO
+    });
+  });
+});

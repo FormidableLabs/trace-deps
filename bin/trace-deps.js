@@ -3,8 +3,7 @@
 "use strict";
 
 const pkg = require("../package.json");
-const { traceFile } = require("../lib/trace");
-const { log, error } = console;
+const { traceFile } = require("../index");
 
 const DEFAULT_OUTPUT = "text";
 const JSON_INDENT = 2;
@@ -28,6 +27,9 @@ Examples:
 // ============================================================================
 // Helpers
 // ============================================================================
+const log = (...args) => console.log(...args); // eslint-disable-line no-console
+const error = (...args) => console.error(...args); // eslint-disable-line no-console
+
 const jsonReport = (data) => JSON.stringify(data, null, JSON_INDENT);
 
 const missGroups = (objs) => objs.reduce((memo, obj) => {
@@ -91,8 +93,7 @@ const getOptions = (args) => ({
 // ============================================================================
 // Script
 // ============================================================================
-const main = async () => {
-  const args = process.argv.slice(2); // eslint-disable-line no-magic-numbers
+const cli = async ({ args = [] } = {}) => {
   const opts = getOptions(args);
   const action = getAction(args);
 
@@ -100,8 +101,14 @@ const main = async () => {
 };
 
 if (require.main === module) {
-  main().catch((err) => {
+  cli({
+    args: process.argv.slice(2) // eslint-disable-line no-magic-numbers
+  }).catch((err) => {
     error(err);
     process.exit(1); // eslint-disable-line no-process-exit
   });
 }
+
+module.exports = {
+  cli
+};

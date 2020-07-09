@@ -73,6 +73,27 @@ _Returns_:
 
 * (`Promise<Object>`): Dependencies and other information. See `traceFile()` for object shape.
 
+## CLI
+
+`trace-deps` also provides a handy CLI for checking all dependencies and misses imported.
+
+```sh
+$ trace-deps -h
+Usage: trace-deps <action> [options]
+
+Actions: (<action>)
+  trace                     Trace dependencies and misses for a file
+
+Options:
+  --input, -i   (trace)     Starting file to trace              [string]
+  --output, -o  (trace)     Output format (text, json)          [string] [default: text]
+  --help, -h                Show help                           [boolean]
+  --version, -v             Show version number                 [boolean]
+
+Examples:
+  trace-deps trace --input ./path/to/file.js     Trace a source file
+```
+
 ## Notes
 
 * **Only parses Node.js JavaScript**: `trace-deps` presently will only Node.js-compatible JavaScript in CommonJS or ESM formats. It will not correctly parse things like TypeScript, JSX, ReasonML, non-JavaScript, etc.
