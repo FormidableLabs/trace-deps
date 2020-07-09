@@ -15,7 +15,7 @@ const stringify = (val) => JSON.stringify(val, null, INDENT);
 const normalizePaths = (str) => str
   .split("\n")
   .map((line) => line.replace(
-    /(\/PATH\/TO\/)(.*?)$/,
+    /(\/PATH\/TO\/)([^"]*)/,
     (m, cwd, part) => path.normalize(path.resolve(part))
   ))
   .join("\n");
@@ -137,7 +137,88 @@ describe("bin/trace-deps", () => {
         `.trim().replace(/^ {10}/gm, "")));
       });
 
-      it("shows dependencies + misses in json format"); // TODO
+      it("shows dependencies + misses in json format", async () => {
+        mock({
+          "hi.mjs": `
+            import { one } from "one";
+            export { two } from "two";
+            import { three } from 'three';
+            import missing from "missing-static-pkg";
+
+            const variableDep = "missing-dynamic-pkg";
+            import(variableDep);
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": "export const one = 'one';"
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": "export const two = 'two';"
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": "export const three = 'three';"
+            }
+          }
+        });
+
+        await cli({ args: ["trace", "-i", "hi.mjs", "-o", "json"] });
+        expect(logStub).to.be.calledWithMatch(normalizePaths(stringify({
+          dependencies: [
+            "/PATH/TO/node_modules/one/index.mjs",
+            "/PATH/TO/node_modules/one/package.json",
+            "/PATH/TO/node_modules/three/index.mjs",
+            "/PATH/TO/node_modules/three/package.json",
+            "/PATH/TO/node_modules/two/index.mjs",
+            "/PATH/TO/node_modules/two/package.json"
+          ],
+          misses: {
+            "/PATH/TO/hi.mjs": [
+              {
+                start: 244,
+                end: 263,
+                loc: {
+                  start: {
+                    line: 8,
+                    column: 12
+                  },
+                  end: {
+                    line: 8,
+                    column: 31
+                  }
+                },
+                src: "import(variableDep)",
+                type: "dynamic"
+              },
+              {
+                start: 134,
+                end: 175,
+                loc: {
+                  start: {
+                    line: 5,
+                    column: 12
+                  },
+                  end: {
+                    line: 5,
+                    column: 53
+                  }
+                },
+                src: "import missing from \"missing-static-pkg\";",
+                dep: "missing-static-pkg",
+                type: "static"
+              }
+            ]
+          }
+        })));
+      });
     });
   });
 });
