@@ -7,6 +7,7 @@ const { traceFile } = require("../lib/trace");
 const { log, error } = console;
 
 const DEFAULT_OUTPUT = "text";
+const JSON_INDENT = 2;
 
 const USAGE = `
 Usage: ${pkg.name} <action> [options]
@@ -25,6 +26,14 @@ Examples:
 `.trim();
 
 // ============================================================================
+// Helpers
+// ============================================================================
+const jsonReport = (data) => JSON.stringify(data, null, JSON_INDENT);
+const textReport = (data) => {
+  console.log("TODO: TEXT REPORT");
+};
+
+// ============================================================================
 // Actions
 // ============================================================================
 const help = async () => { log(USAGE); };
@@ -39,7 +48,8 @@ const trace = async ({ input, output }) => {
     bailOnMissing: false
   });
 
-  log(JSON.stringify(data, null, 2));
+  const report = output === "text" ? textReport : jsonReport;
+  log(report(data));
 };
 
 // ============================================================================
@@ -70,7 +80,7 @@ const main = async () => {
   const opts = getOptions(args);
   const action = getAction(args, opts);
   const actionName = JSON.stringify({ action: action.name });
-  log(`Starting ${actionName} with options ${JSON.stringify(opts)}`); // TODO: REMOVE (?)
+
   await action(opts);
 };
 
