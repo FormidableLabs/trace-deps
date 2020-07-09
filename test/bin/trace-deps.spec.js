@@ -53,10 +53,28 @@ describe("bin/trace-deps", () => {
         await expect(cli({ args: ["trace", "--input", ""] }))
           .to.eventually.be.rejectedWith("Must specify --input file to trace");
       });
-      it("errors on non-existent file"); // TODO
-      it("handles no dependencies"); // TODO
-      it("shows dependencies"); // TODO
-      it("shows misses"); // TODO
+
+      it("errors on non-existent file", async () => {
+        await expect(cli({ args: ["trace", "--input", "DOES_NOT_EXIST.js"] }))
+          .to.eventually.be.rejectedWith("Could not find source file");
+      });
+
+      it("handles no dependencies", async () => {
+        mock({
+          "hi.js": "module.exports = 'hi';"
+        });
+
+        await cli({ args: ["trace", "--input", "hi.js"] });
+        expect(logStub).to.be.calledWithMatch(`
+          ## Dependencies
+
+
+          ## Misses
+        `.trim().replace(/ {10}/, ""));
+      });
+
+      it("shows dependencies + misses in text format"); // TODO
+      it("shows dependencies + misses in json format"); // TODO
     });
   });
 });
