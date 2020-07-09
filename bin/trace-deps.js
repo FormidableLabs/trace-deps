@@ -29,9 +29,25 @@ Examples:
 // Helpers
 // ============================================================================
 const jsonReport = (data) => JSON.stringify(data, null, JSON_INDENT);
-const textReport = (data) => {
-  console.log("TODO: TEXT REPORT");
-};
+
+const missGroups = (objs) => objs.reduce((memo, obj) => {
+  memo[obj.type] = [].concat(memo[obj.type] || []).concat(obj);
+  return memo;
+}, {});
+const textMiss = ({ dep, src }) => `    - "${dep || src}"`;
+const textReport = ({ dependencies, misses }) => `
+## Dependencies
+${dependencies.map((d) => `- ${d}`).join("\n")}
+
+## Misses
+${Object.entries(misses)
+    .map(([k, objs]) => `- ${k}\n${Object.entries(missGroups(objs))
+      .map(([type, vals]) => `  - ${type} (${vals.length})\n${vals.map(textMiss).join("\n")}`)
+      .join("\n")
+    }`)
+    .join("\n")
+}
+`;
 
 // ============================================================================
 // Actions
@@ -56,7 +72,7 @@ const trace = async ({ input, output }) => {
 // Configuration
 // ============================================================================
 // Get action or help / version name
-const getAction = (args, opts) => {
+const getAction = (args) => {
   // Return actions in priority order.
   if (args.includes("--help") || args.includes("-h")) { return help; }
   if (args.includes("--version") || args.includes("-v")) { return version; }
@@ -78,8 +94,7 @@ const getOptions = (args) => ({
 const main = async () => {
   const args = process.argv.slice(2); // eslint-disable-line no-magic-numbers
   const opts = getOptions(args);
-  const action = getAction(args, opts);
-  const actionName = JSON.stringify({ action: action.name });
+  const action = getAction(args);
 
   await action(opts);
 };
