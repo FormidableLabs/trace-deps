@@ -4,6 +4,7 @@ Changes
 ## UNRELEASED
 
 * Feature: Add `sourceMaps` parameter with support for source map file inclusion.
+* Infra: Switch CI to GitHub Actions.
 
 ## 0.3.5
 
