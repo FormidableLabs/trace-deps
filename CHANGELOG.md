@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Feature: Add `sourceMaps` parameter with support for source map file inclusion.
+
 ## 0.3.5
 
 * Feature: Add `trace-deps` CLI.

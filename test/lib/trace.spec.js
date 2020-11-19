@@ -220,6 +220,50 @@ describe("lib/trace", () => {
       }));
     });
 
+    // TODO: HERE -- START TESTS FOR SOURCE MAPS
+    it.skip("includes source map files", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one");
+          require("two");
+          require(\`three\`);
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = 'one';"
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = 'two';"
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": "module.exports = 'three';"
+          }
+        }
+      });
+
+      const srcPath = "hi.js";
+      const { dependencies, misses } = await traceFile({ srcPath });
+      expect(dependencies).to.eql(fullPaths([
+        "node_modules/one/index.js",
+        "node_modules/one/package.json",
+        "node_modules/three/index.js",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
+
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({}));
+    });
+
     it("handles imports with .mjs", async () => {
       mock({
         "hi.mjs": `
