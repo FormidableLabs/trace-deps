@@ -283,9 +283,10 @@ describe("lib/trace", () => {
         includeSourceMaps: true
       });
 
-      expect(dependencies).to.eql(fullPaths([
+      expect(sourceMaps).to.eql(fullPaths([
+        "/ABS/PATH/hi.js.map",
         "hi.js.map",
-
+        "node_modules/one/index.jsbundle"
       ]));
 
       expect(dependencies).to.eql(fullPaths([
