@@ -88,10 +88,11 @@ Actions: (<action>)
   trace                     Trace dependencies and misses for a file
 
 Options:
-  --input, -i   (trace)     Starting file to trace              [string]
-  --output, -o  (trace)     Output format (text, json)          [string] [default: text]
-  --help, -h                Show help                           [boolean]
-  --version, -v             Show version number                 [boolean]
+  --input, -i       (trace) Starting file to trace        [string]
+  --output, -o      (trace) Output format (text, json)    [string] [default: text]
+  --source-maps, -s (trace) Include source maps output    [boolean]
+  --help, -h                Show help                     [boolean]
+  --version, -v             Show version number           [boolean]
 
 Examples:
   trace-deps trace --input ./path/to/file.js     Trace a source file

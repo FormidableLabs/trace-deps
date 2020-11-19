@@ -138,7 +138,7 @@ describe("bin/trace-deps", () => {
         `.trim().replace(/^ {10}/gm, "")));
       });
 
-      it("shows dependencies + misses in json format", async () => {
+      it("shows dependencies + source maps + misses in json format", async () => {
         mock({
           "hi.mjs": `
             import { one } from "one";
@@ -148,6 +148,8 @@ describe("bin/trace-deps", () => {
 
             const variableDep = "missing-dynamic-pkg";
             import(variableDep);
+
+            //# sourceMappingURL=hi.mjs.map
           `,
           node_modules: {
             one: {
@@ -166,12 +168,16 @@ describe("bin/trace-deps", () => {
               "package.json": stringify({
                 main: "index.mjs"
               }),
-              "index.mjs": "export const three = 'three';"
+              "index.mjs": `
+                export const three = 'three';
+
+                //@ sourceMappingURL=index.mjs.map
+              `
             }
           }
         });
 
-        await cli({ args: ["trace", "-i", "hi.mjs", "-o", "json"] });
+        await cli({ args: ["trace", "-i", "hi.mjs", "-o", "json", "-s"] });
         expect(logStub).to.be.calledWithMatch(stringify({
           dependencies: [
             "/PATH/TO/node_modules/one/index.mjs",
@@ -217,7 +223,11 @@ describe("bin/trace-deps", () => {
                 type: "static"
               }
             ]
-          }
+          },
+          sourceMaps: [
+            "/PATH/TO/hi.mjs.map",
+            "/PATH/TO/node_modules/three/index.mjs.map"
+          ].map(normalizePath)
         }));
       });
     });
