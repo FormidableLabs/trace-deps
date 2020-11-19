@@ -1697,7 +1697,7 @@ describe("lib/trace", () => {
 
               //# sourceMappingURL=early/map-comment/should-be-ignored
 
-              //# sourceMappingURL=../one/index.not-map-suffix
+              //@ sourceMappingURL=../one/index.not-map-suffix
             `,
             "index.jsbundle": "{\"not\":\"read\"}"
           },
