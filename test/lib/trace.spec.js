@@ -196,7 +196,10 @@ describe("lib/trace", () => {
       });
 
       const srcPath = "hi.js";
-      const { dependencies, misses } = await traceFile({ srcPath });
+      const { dependencies, sourceMaps, misses } = await traceFile({ srcPath });
+
+      expect(sourceMaps).to.be.an("undefined");
+
       expect(dependencies).to.eql(fullPaths([
         "node_modules/one/index.js",
         "node_modules/one/package.json",
@@ -275,7 +278,16 @@ describe("lib/trace", () => {
       });
 
       const srcPath = "hi.js";
-      const { dependencies, misses } = await traceFile({ srcPath, sourceMaps: true });
+      const { dependencies, sourceMaps, misses } = await traceFile({
+        srcPath,
+        includeSourceMaps: true
+      });
+
+      expect(dependencies).to.eql(fullPaths([
+        "hi.js.map",
+
+      ]));
+
       expect(dependencies).to.eql(fullPaths([
         "ho.js",
         "node_modules/one/index.js",

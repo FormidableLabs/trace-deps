@@ -29,7 +29,7 @@ _Parameters_:
 * `ignores` (`Array<string>`): list of package prefixes to ignore tracing entirely
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted missing module prefixes.
 * `bailOnMissing` (`boolean`): Throw error if missing static import. (Default: `true`). If false, misses are added to `misses` object.
-* `sourceMaps` (`boolean`): Include source map resolved file paths from control comments. File paths are not actually checked to see if present.  (Default: `false`)
+* `includeSourceMaps` (`boolean`): Include source map resolved file paths from control comments. File paths are not actually checked to see if present.  (Default: `false`)
     * Source mapping URLs are only included and resolved if they are of the form `//# sourceMappingURL=<url>` or `//@ sourceMappingURL=<url>` and have a relative / absolute on-disk path (that is resolved relative to source file containing the comment). URL values starting with `http://` or `https://` are ignored.
 * `extraImports` (`Object.<string, Array<string>`): Mapping of files to additional imports to trace.
     * The **key** is path (either Posix or native OS paths are accepted) in the form of either:
@@ -42,7 +42,7 @@ _Returns_:
 
 * (`Promise<Object>`): Dependencies and other information.
     * `dependencies` (`Array<string>`): list of absolute paths to on-disk dependencies
-    * `sourceMaps` (`Array<string>`): list of resolved, absolute paths to source map files if `sourceMaps: true` parameter is specified
+    * `sourceMaps` (`Array<string>`): list of resolved, absolute paths to source map files if `includeSourceMaps: true` parameter is specified
     * `misses` (`Object.<string, Array<Object>`): Mapping of file absolute paths on disk to an array of imports that `trace-deps` was **not** able to resolve (dynamic requires, etc.). The object contained in the value array is structured as follows:
         * `src` (`string`): The source code snippet of the import in question (e.g., `"require(A_VAR)"`)
         * `start`, `end` (`number`): The starting / ending character indexes in the source code string corresponding to the source file.
@@ -69,7 +69,7 @@ _Parameters_:
 * `ignores` (`Array<string>`): list of package prefixes to ignore
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted missing module prefixes.
 * `bailOnMissing` (`boolean`): Throw error if missing static import.
-* `sourceMaps` (`boolean`): Include source map file paths from control comments
+* `includeSourceMaps` (`boolean`): Include source map file paths from control comments
 * `extraImports` (`Object.<string, Array<string>`): Mapping of files to additional imports to trace.
 
 _Returns_:
