@@ -221,38 +221,63 @@ describe("lib/trace", () => {
     });
 
     // TODO: HERE -- START TESTS FOR SOURCE MAPS
-    it.skip("includes source map files", async () => {
+    it("includes source map files", async () => {
       mock({
         "hi.js": `
           const one = require("one");
           require("two");
           require(\`three\`);
+          require("./ho");
+
+          module.exports = 'hi';
+          //# sourceMappingURL=hi.js.map
+        `,
+        "hi.js.map": "{\"not\":\"read\"}",
+        "ho.js": `
+          module.exports = 'ho';
+          //# sourceMappingURL=/ABS/PATH/hi.js.map
         `,
         node_modules: {
           one: {
             "package.json": stringify({
               main: "index.js"
             }),
-            "index.js": "module.exports = 'one';"
+            "index.js": `
+              module.exports = 'one';
+
+              //# sourceMappingURL=early/map-comment/should-be-ignored
+
+              //# sourceMappingURL=../one/index.jsbundle
+            `,
+            "index.jsbundle": "{\"not\":\"read\"}"
           },
           two: {
             "package.json": stringify({
               main: "index.js"
             }),
-            "index.js": "module.exports = 'two';"
+            "index.js": `
+              module.exports = 'two';
+
+              /*# sourceMappingURL=ignore/block/version.js.map */
+            `
           },
           three: {
             "package.json": stringify({
               main: "index.js"
             }),
-            "index.js": "module.exports = 'three';"
+            "index.js": `
+              module.exports = 'three';
+
+              //# sourceMappingURL=https://ignore.com/http/and/https/urls.js.map
+            `
           }
         }
       });
 
       const srcPath = "hi.js";
-      const { dependencies, misses } = await traceFile({ srcPath });
+      const { dependencies, misses } = await traceFile({ srcPath, sourceMaps: true });
       expect(dependencies).to.eql(fullPaths([
+        "ho.js",
         "node_modules/one/index.js",
         "node_modules/one/package.json",
         "node_modules/three/index.js",

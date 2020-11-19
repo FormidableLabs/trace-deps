@@ -30,6 +30,7 @@ _Parameters_:
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted missing module prefixes.
 * `bailOnMissing` (`boolean`): Throw error if missing static import. (Default: `true`). If false, misses are added to `misses` object.
 * `sourceMaps` (`boolean`): Include source map resolved file paths from control comments. File paths are not actually checked to see if present.  (Default: `false`)
+    * Source mapping URLs are only included and resolved if they are of the form `//# sourceMappingURL=<url>` or `//@ sourceMappingURL=<url>` and have a relative / absolute on-disk path (that is resolved relative to source file containing the comment). URL values starting with `http://` or `https://` are ignored.
 * `extraImports` (`Object.<string, Array<string>`): Mapping of files to additional imports to trace.
     * The **key** is path (either Posix or native OS paths are accepted) in the form of either:
         1. an **absolute** path to a source file (e.g., `/PATH/TO/src/foo.js`), or;
