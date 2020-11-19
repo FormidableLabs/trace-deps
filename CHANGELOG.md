@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Infra: Switch CI to GitHub Actions.
+
 ## 0.3.5
 
 * Feature: Add `trace-deps` CLI.
