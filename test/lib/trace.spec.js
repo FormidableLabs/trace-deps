@@ -250,7 +250,7 @@ describe("lib/trace", () => {
 
               //# sourceMappingURL=early/map-comment/should-be-ignored
 
-              //# sourceMappingURL=../one/index.jsbundle
+              //# sourceMappingURL=../one/index.not-map-suffix
             `,
             "index.jsbundle": "{\"not\":\"read\"}"
           },
@@ -286,7 +286,7 @@ describe("lib/trace", () => {
       expect(sourceMaps).to.eql(fullPaths([
         "/ABS/PATH/hi.js.map",
         "hi.js.map",
-        "node_modules/one/index.jsbundle"
+        "node_modules/one/index.not-map-suffix"
       ]));
 
       expect(dependencies).to.eql(fullPaths([
