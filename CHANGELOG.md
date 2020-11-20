@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.3.6
 
 * Feature: Add `includeSourceMaps` parameter with support for source map file inclusion.
 * Infra: Switch CI to GitHub Actions.
