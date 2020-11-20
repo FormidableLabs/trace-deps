@@ -138,6 +138,68 @@ describe("bin/trace-deps", () => {
         `.trim().replace(/^ {10}/gm, "")));
       });
 
+      it("shows dependencies + source maps + misses in text format", async () => {
+        mock({
+          "hi.js": `
+            const one = require("one");
+            require("two");
+            require(\`three\`);
+
+            const variableDep = "missing-dynamic-pkg";
+            require(variableDep);
+            require.resolve("missing-static-pkg");
+
+            //# sourceMappingURL=hi.js.map
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = 'one';"
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'two';
+
+                //# sourceMappingURL=index.js.map
+              `
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = 'three';"
+            }
+          }
+        });
+
+        await cli({ args: ["trace", "-i", "hi.js", "-o", "text", "-s"] });
+        expect(logStub).to.be.calledWithMatch(normalizePaths(`
+          ## Dependencies
+          - /PATH/TO/node_modules/one/index.js
+          - /PATH/TO/node_modules/one/package.json
+          - /PATH/TO/node_modules/three/index.js
+          - /PATH/TO/node_modules/three/package.json
+          - /PATH/TO/node_modules/two/index.js
+          - /PATH/TO/node_modules/two/package.json
+
+          ## Source Maps
+          - /PATH/TO/hi.js.map
+          - /PATH/TO/node_modules/two/index.js.map
+
+          ## Misses
+          - /PATH/TO/hi.js
+            - dynamic (1)
+              - "require(variableDep)"
+            - static (1)
+              - "missing-static-pkg"
+        `.trim().replace(/^ {10}/gm, "")));
+      });
+
       it("shows dependencies + source maps + misses in json format", async () => {
         mock({
           "hi.mjs": `

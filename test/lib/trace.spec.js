@@ -234,7 +234,7 @@ describe("lib/trace", () => {
           module.exports = 'hi';
           //# sourceMappingURL=hi.js.map
         `,
-        "hi.js.map": "{\"not\":\"read\"}",
+        "hi.js.map": "{\"not\":\"real\"}",
         "ho.js": `
           module.exports = 'ho';
           //# sourceMappingURL=/ABS/PATH/ho.js.map
