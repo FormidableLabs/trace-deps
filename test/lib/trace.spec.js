@@ -196,7 +196,10 @@ describe("lib/trace", () => {
       });
 
       const srcPath = "hi.js";
-      const { dependencies, misses } = await traceFile({ srcPath });
+      const { dependencies, sourceMaps, misses } = await traceFile({ srcPath });
+
+      expect(sourceMaps).to.be.an("undefined");
+
       expect(dependencies).to.eql(fullPaths([
         "node_modules/one/index.js",
         "node_modules/one/package.json",
@@ -218,6 +221,84 @@ describe("lib/trace", () => {
           "require.resolve(\"binary\" + variableResolve)"
         ]
       }));
+    });
+
+    it("includes source map files", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one");
+          require("two");
+          require(\`three\`);
+          require("./ho");
+
+          module.exports = 'hi';
+          //# sourceMappingURL=hi.js.map
+        `,
+        "hi.js.map": "{\"not\":\"real\"}",
+        "ho.js": `
+          module.exports = 'ho';
+          //# sourceMappingURL=/ABS/PATH/ho.js.map
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = 'one';
+
+              //# sourceMappingURL=early/map-comment/should-be-ignored
+
+              //# sourceMappingURL=../one/index.not-map-suffix
+            `,
+            "index.jsbundle": "{\"not\":\"read\"}"
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = 'two';
+
+              /*# sourceMappingURL=ignore/block/version.js.map */
+            `
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = 'three';
+
+              //# sourceMappingURL=https://ignore.com/http/and/https/urls.js.map
+            `
+          }
+        }
+      });
+
+      const srcPath = "hi.js";
+      const { dependencies, sourceMaps, misses } = await traceFile({
+        srcPath,
+        includeSourceMaps: true
+      });
+
+      expect(sourceMaps).to.eql(fullPaths([
+        "/ABS/PATH/ho.js.map",
+        "hi.js.map",
+        "node_modules/one/index.not-map-suffix"
+      ]));
+
+      expect(dependencies).to.eql(fullPaths([
+        "ho.js",
+        "node_modules/one/index.js",
+        "node_modules/one/package.json",
+        "node_modules/three/index.js",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
+
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({}));
     });
 
     it("handles imports with .mjs", async () => {
@@ -1588,6 +1669,83 @@ describe("lib/trace", () => {
           "require.resolve(\"binary\" + variableResolve)"
         ]
       }));
+    });
+
+
+    it("includes source map files", async () => {
+      mock({
+        "hi.js": `
+          const one = require("one");
+          require("two");
+          require(\`three\`);
+
+          module.exports = 'hi';
+          //# sourceMappingURL=hi.js.map
+        `,
+        "hi.js.map": "{\"not\":\"read\"}",
+        "ho.js": `
+          module.exports = 'ho';
+          //# sourceMappingURL=/ABS/PATH/ho.js.map
+        `,
+        node_modules: {
+          one: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = 'one';
+
+              //# sourceMappingURL=early/map-comment/should-be-ignored
+
+              //@ sourceMappingURL=../one/index.not-map-suffix
+            `,
+            "index.jsbundle": "{\"not\":\"read\"}"
+          },
+          two: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = 'two';
+
+              /*# sourceMappingURL=ignore/block/version.js.map */
+            `
+          },
+          three: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              module.exports = 'three';
+
+              //# sourceMappingURL=https://ignore.com/http/and/https/urls.js.map
+            `
+          }
+        }
+      });
+
+      const srcPaths = ["hi.js", "ho.js"];
+      const { dependencies, sourceMaps, misses } = await traceFiles({
+        srcPaths,
+        includeSourceMaps: true
+      });
+
+      expect(sourceMaps).to.eql(fullPaths([
+        "/ABS/PATH/ho.js.map",
+        "hi.js.map",
+        "node_modules/one/index.not-map-suffix"
+      ]));
+
+      expect(dependencies).to.eql(fullPaths([
+        "node_modules/one/index.js",
+        "node_modules/one/package.json",
+        "node_modules/three/index.js",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
+
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({}));
     });
   });
 });

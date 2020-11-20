@@ -15,10 +15,11 @@ Actions: (<action>)
   trace                     Trace dependencies and misses for a file
 
 Options:
-  --input, -i   (trace)     Starting file to trace              [string]
-  --output, -o  (trace)     Output format (text, json)          [string] [default: text]
-  --help, -h                Show help                           [boolean]
-  --version, -v             Show version number                 [boolean]
+  --input, -i       (trace) Starting file to trace        [string]
+  --output, -o      (trace) Output format (text, json)    [string] [default: text]
+  --source-maps, -s (trace) Include source maps output    [boolean]
+  --help, -h                Show help                     [boolean]
+  --version, -v             Show version number           [boolean]
 
 Examples:
   ${pkg.name} trace --input ./path/to/file.js     Trace a source file
@@ -37,10 +38,13 @@ const missGroups = (objs) => objs.reduce((memo, obj) => {
   return memo;
 }, {});
 const textMiss = ({ dep, src }) => `    - "${dep || src}"`;
-const textReport = ({ dependencies, misses }) => `
+const textReport = ({ dependencies, sourceMaps, misses }) => `
 ## Dependencies
 ${dependencies.map((d) => `- ${d}`).join("\n")}
-
+${!sourceMaps ? "" : `
+## Source Maps
+${sourceMaps.map((s) => `- ${s}`).join("\n")}
+`}
 ## Misses
 ${Object.entries(misses)
     .map(([k, objs]) => `- ${k}\n${Object.entries(missGroups(objs))
@@ -56,14 +60,15 @@ ${Object.entries(misses)
 // ============================================================================
 const help = async () => { log(USAGE); };
 const version = async () => { log(pkg.version); };
-const trace = async ({ input, output }) => {
+const trace = async ({ input, output, includeSourceMaps }) => {
   if (!input) {
     throw new Error("Must specify --input file to trace");
   }
 
   const data = await traceFile({
     srcPath: input,
-    bailOnMissing: false
+    bailOnMissing: false,
+    includeSourceMaps
   });
 
   const report = output === "text" ? textReport : jsonReport;
@@ -86,8 +91,9 @@ const getAction = (args) => {
 
 // Get options for actions.
 const getOptions = (args) => ({
-  input: args.find((val, i) => ["--input", "-i"].includes(args[i - 1])) || null,
-  output: args.find((val, i) => ["--output", "-o"].includes(args[i - 1])) || DEFAULT_OUTPUT
+  input: args.find((_, i) => ["--input", "-i"].includes(args[i - 1])) || null,
+  output: args.find((_, i) => ["--output", "-o"].includes(args[i - 1])) || DEFAULT_OUTPUT,
+  includeSourceMaps: args.includes("--source-maps") || args.includes("-s")
 });
 
 // ============================================================================
