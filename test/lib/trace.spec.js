@@ -1671,7 +1671,6 @@ describe("lib/trace", () => {
       }));
     });
 
-
     it("includes source map files", async () => {
       mock({
         "hi.js": `
@@ -1746,6 +1745,40 @@ describe("lib/trace", () => {
       ]));
 
       expect(missesMap({ misses })).to.eql(resolveObjKeys({}));
+    });
+
+    it("removes core standard Node.js libraries properly", async () => {
+      mock({
+        "hi.js": `
+          const fetch = require("node-fetch");
+        `,
+        node_modules: {
+          "node-fetch": {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              require("http");
+
+              let convert;
+              try {
+                convert = require('encoding').convert;
+              } catch (e) {}
+
+              module.exports = 'node-fetch';
+            `,
+          },
+        }
+      });
+
+      await traceFiles({
+        srcPaths: ["hi.js"],
+        allowMissing: {
+          "node-fetch": [
+            "encoding",
+          ],
+        }
+      });
     });
   });
 });
