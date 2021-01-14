@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.3.7
 
 * Bug: Fix `allowMissing` when used with Node.js built-in modules.
   [#42](https://github.com/FormidableLabs/trace-deps/issues/42) (*[@martinnabhan][]*)
