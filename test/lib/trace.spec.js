@@ -1766,8 +1766,8 @@ describe("lib/trace", () => {
               } catch (e) {}
 
               module.exports = 'node-fetch';
-            `,
-          },
+            `
+          }
         }
       });
 
@@ -1775,8 +1775,8 @@ describe("lib/trace", () => {
         srcPaths: ["hi.js"],
         allowMissing: {
           "node-fetch": [
-            "encoding",
-          ],
+            "encoding"
+          ]
         }
       });
     });
