@@ -1,6 +1,11 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Bug: Fix `allowMissing` when used with Node.js built-in modules.
+  [#42](https://github.com/FormidableLabs/trace-deps/issues/42) (*[@martinnabhan][]*)
+
 ## 0.3.6
 
 * Feature: Add `includeSourceMaps` parameter with support for source map file inclusion.
@@ -66,3 +71,5 @@ Changes
 ## 0.1.0
 
 * Initial release.
+
+[@martinnabhan]: https://github.com/martinnabhan

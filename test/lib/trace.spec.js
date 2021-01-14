@@ -1747,7 +1747,8 @@ describe("lib/trace", () => {
       expect(missesMap({ misses })).to.eql(resolveObjKeys({}));
     });
 
-    it("removes core standard Node.js libraries properly", async () => {
+    // Regression test: https://github.com/FormidableLabs/trace-deps/issues/42
+    it("removes core standard Node.js libraries with allowMissing", async () => {
       mock({
         "hi.js": `
           const fetch = require("node-fetch");
