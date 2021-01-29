@@ -27,7 +27,7 @@ _Parameters_:
 
 * `srcPath` (`string`): source file path to trace
 * `ignores` (`Array<string>`): list of package prefixes to ignore tracing entirely
-* `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted missing module prefixes.
+* `allowMissing` (`Object.<string, Array<string>`): Mapping of (1) source file paths and (2) package prefixes to permitted missing module prefixes. Source file paths must match the entire file path (resolved to CWD if relative) (`./entry.js` is matched as `/FULL/PATH/TO/entry.js`) while package prefixes are the start of package name and optionally more of the path (`lodash` or `@scope/pkg/some/path`).
 * `bailOnMissing` (`boolean`): Throw error if missing static import. (Default: `true`). If false, misses are added to `misses` object.
 * `includeSourceMaps` (`boolean`): Include source map resolved file paths from control comments. File paths are not actually checked to see if present.  (Default: `false`)
     * Source mapping URLs are only included and resolved if they are of the form `//# sourceMappingURL=<url>` or `//@ sourceMappingURL=<url>` and have a relative / absolute on-disk path (that is resolved relative to source file containing the comment). URL values starting with `http://` or `https://` are ignored.
@@ -67,7 +67,7 @@ _Parameters_:
 
 * `srcPaths` (`Array<string>`): source file paths to trace
 * `ignores` (`Array<string>`): list of package prefixes to ignore
-* `allowMissing` (`Object.<string, Array<string>`): Mapping of package prefixes to permitted missing module prefixes.
+* `allowMissing` (`Object.<string, Array<string>`): Mapping of source file paths and package prefixes to permitted missing module prefixes.
 * `bailOnMissing` (`boolean`): Throw error if missing static import.
 * `includeSourceMaps` (`boolean`): Include source map file paths from control comments
 * `extraImports` (`Object.<string, Array<string>`): Mapping of files to additional imports to trace.
@@ -114,6 +114,18 @@ Examples:
     traceFile({
       srcPath,
       allowMissing: {
+        // While we don't normally expect your _own_ application sources to
+        // have tracing misses, this often comes up in transpiled output that
+        // you don't full control like Next.js `target: "serverless"` webpack
+        // bundles for Lambda handlers.
+        "./dist/my-app.js":[
+          "critters"
+        ],
+        "/FULL/PATH/WORKS/TOO/dist/my-app.js":[
+          "critters"
+        ],
+        // A normal package name from `node_modules`. The `ws` library for
+        // example has various optional `require()`s.
         "ws": [
           // See, e.g.: https://github.com/websockets/ws/blob/08c6c8ba70404818f7f4bc23eb5fd0bf9c94c039/lib/buffer-util.js#L121-L122
           "bufferutil",

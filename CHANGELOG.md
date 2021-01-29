@@ -1,6 +1,11 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Feature: Support application source paths in `allowMissing` configuration.
+  [#41](https://github.com/FormidableLabs/trace-deps/issues/41)
+
 ## 0.3.7
 
 * Bug: Fix `allowMissing` when used with Node.js built-in modules.

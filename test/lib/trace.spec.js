@@ -1066,7 +1066,7 @@ describe("lib/trace", () => {
       const { dependencies, misses } = await traceFile({
         srcPath: "entry.js",
         allowMissing: {
-          [path.resolve("entry.js")]: [
+          [path.resolve("nested.js")]: [
             "missing-pkg"
           ]
         }
