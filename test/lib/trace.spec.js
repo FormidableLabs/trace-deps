@@ -1077,7 +1077,6 @@ describe("lib/trace", () => {
       expect(misses).to.eql({});
     });
 
-
     it("handles missing package.json:main and index.json", async () => {
       mock({
         "hi.js": `
