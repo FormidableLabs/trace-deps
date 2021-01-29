@@ -1015,6 +1015,69 @@ describe("lib/trace", () => {
       );
     });
 
+    it("handles misses in entry point app source", async () => {
+      mock({
+        "entry.js": `
+          require("missing-pkg");
+        `
+      });
+
+      const { dependencies, misses } = await traceFile({
+        srcPath: "entry.js",
+        allowMissing: {
+          [path.resolve("entry.js")]: [
+            "missing-pkg"
+          ]
+        }
+      });
+      expect(dependencies).to.eql(fullPaths([]));
+      expect(misses).to.eql({});
+    });
+
+    it("handles misses in full path entry point app source", async () => {
+      mock({
+        "entry.js": `
+          require("missing-pkg");
+        `
+      });
+
+      const { dependencies, misses } = await traceFile({
+        srcPath: path.resolve("entry.js"),
+        allowMissing: {
+          [path.resolve("entry.js")]: [
+            "missing-pkg"
+          ]
+        }
+      });
+      expect(dependencies).to.eql(fullPaths([]));
+      expect(misses).to.eql({});
+    });
+
+    it("handles misses in nested app source", async () => {
+      mock({
+        "entry.js": `
+          require("./nested");
+        `,
+        "nested.js": `
+          module.exports = require("missing-pkg");
+        `
+      });
+
+      const { dependencies, misses } = await traceFile({
+        srcPath: "entry.js",
+        allowMissing: {
+          [path.resolve("entry.js")]: [
+            "missing-pkg"
+          ]
+        }
+      });
+      expect(dependencies).to.eql(fullPaths([
+        "nested.js"
+      ]));
+      expect(misses).to.eql({});
+    });
+
+
     it("handles missing package.json:main and index.json", async () => {
       mock({
         "hi.js": `
