@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.3.8
 
 * Feature: Support application source paths in `allowMissing` configuration.
   [#41](https://github.com/FormidableLabs/trace-deps/issues/41)
