@@ -24,6 +24,13 @@ configs:
       - "jimp"
       - "probe-image-size"
 
+    # `redis-parser` has an optional + undeclared dependency on `hiredis`
+    # for legacy mode (try/catch-ed) which is optional.
+    'redis-parser': ['hiredis']
+    
+    # adm-zip has support for electron original-fs which we don't need
+    'adm-zip': ['original-fs']
+
   # Dynamic import misses in common libraries.
   dynamic:
     resolutions: &resolutions
@@ -185,4 +192,3 @@ options: # OR `packages.<NAME>`
   dynamic:
     resolutions: *resolutions
 ```
-
