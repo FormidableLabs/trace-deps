@@ -141,5 +141,5 @@ Examples:
 [npm_site]: http://badge.fury.io/js/trace-deps
 [actions_img]: https://github.com/FormidableLabs/trace-deps/workflows/CI/badge.svg
 [actions_site]: https://github.com/FormidableLabs/trace-deps/actions
-[cov_img]: https://codecov.io/gh/FormidableLabs/trace-deps/branch/master/graph/badge.svg
+[cov_img]: https://codecov.io/gh/FormidableLabs/trace-deps/branch/main/graph/badge.svg
 [cov_site]: https://codecov.io/gh/FormidableLabs/trace-deps
