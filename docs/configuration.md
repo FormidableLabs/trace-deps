@@ -177,6 +177,14 @@ configs:
       # - [104:15]: require(dir + '/package.json')
       #
       "pkginfo/lib/pkginfo.js": false
+      
+      # Prisma tries to dynamically find the project route by importing package.json files, which
+      # we already include. You'll also want to make sure "node_modules/.prisma/client/*" is
+      # included in your packages using the "include" option.
+      #
+      # - [72172:23]: require(pkgPath)
+      #
+      '@prisma/client/runtime/index.js': false
 
 # `serverless-jetpack`
 custom: # OR `functions.<NAME>`
