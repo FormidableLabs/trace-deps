@@ -1077,6 +1077,63 @@ describe("lib/trace", () => {
       expect(misses).to.eql({});
     });
 
+    // https://github.com/FormidableLabs/trace-deps/issues/49
+    it.only("handles misses with package relative paths and prefix values", async () => {
+      mock({
+        "hi.js": `
+          require("pkg");
+        `,
+        node_modules: {
+          pkg: {
+            "package.json": stringify({
+              main: "index.js"
+            }),
+            "index.js": `
+              require("./one");
+              require("./nested/two.js");
+              require("missing");
+            `,
+            "one.js": `
+              require("missing/path/a");
+              require("missing-in-one");
+              require("missing-in-one-with-path/path/to/file.js");
+            `,
+            nested: {
+              "two.js": `
+              require("missing/path/b");
+              require("missing-in-two");
+              require("missing-in-two-with-path/path/to/file.js");
+            `
+            }
+          }
+        }
+      });
+
+      const { dependencies, misses } = await traceFile({
+        srcPath: "hi.js",
+        allowMissing: {
+          pkg: [
+            "missing"
+          ],
+          "pkg/one.js": [
+            "missing-in-one",
+            "missing-in-one-with-path/path" // partial path
+          ],
+          "pkg/nested/two.js": [
+            "missing-in-two",
+            "missing-in-two-with-path/path/to/file.js" // full path
+          ]
+        }
+      });
+      expect(dependencies).to.eql(fullPaths([
+        "node_modules/pkg/index.js",
+        "node_modules/pkg/nested/two.js",
+        "node_modules/pkg/one.js",
+        "node_modules/pkg/package.json"
+      ]));
+      expect(misses).to.eql({});
+    });
+
     it("handles missing package.json:main and index.json", async () => {
       mock({
         "hi.js": `
