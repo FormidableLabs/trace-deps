@@ -1077,8 +1077,8 @@ describe("lib/trace", () => {
       expect(misses).to.eql({});
     });
 
-    // https://github.com/FormidableLabs/trace-deps/issues/49
-    it.only("handles misses with package relative paths and prefix values", async () => {
+    // Regression test: https://github.com/FormidableLabs/trace-deps/issues/49
+    it("handles misses with package relative paths and prefix values", async () => {
       mock({
         "hi.js": `
           require("pkg");
