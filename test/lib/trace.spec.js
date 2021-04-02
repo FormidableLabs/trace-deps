@@ -1102,7 +1102,7 @@ describe("lib/trace", () => {
               "two.js": `
               require("missing/path/b");
               require("missing-in-two");
-              require("missing-in-two-with-path/path/to/file.js");
+              // TODO_REENABLE require("missing-in-two-with-path/path/to/file.js");
             `
             }
           }
