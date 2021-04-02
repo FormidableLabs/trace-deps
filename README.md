@@ -30,6 +30,7 @@ _Parameters_:
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of (1) absolute source file paths and (2) package name or relative file path keys to permitted missing module prefixes values.
     * Source file keys must match the entire file path (e.g., `/FULL/PATH/TO/entry.js`) while package keys are the start of package name either alone or with the rest of the relative path to ultimate file (e.g., `lodash`, `@scope/pkg` or `@scope/pkg/some/path/to/file.js`).
     * Missing module prefix values may be the package name or any part of the relative path thereafter (e.g., `pkg`, `pkg/some`, `pkg/some/path/to/file.js`)
+        * Paths in forward slash (`/`) form.
 * `bailOnMissing` (`boolean`): Throw error if missing static import. (Default: `true`). If false, misses are added to `misses` object.
 * `includeSourceMaps` (`boolean`): Include source map resolved file paths from control comments. File paths are not actually checked to see if present.  (Default: `false`)
     * Source mapping URLs are only included and resolved if they are of the form `//# sourceMappingURL=<url>` or `//@ sourceMappingURL=<url>` and have a relative / absolute on-disk path (that is resolved relative to source file containing the comment). URL values starting with `http://` or `https://` are ignored.
