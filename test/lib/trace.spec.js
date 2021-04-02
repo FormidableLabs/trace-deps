@@ -1410,7 +1410,7 @@ describe("lib/trace", () => {
         extraImports: {
           // Absolute path, so application source file with **full match**
           // Use win32 path.
-          [path.resolve(".\\lib\\middle\\ho.js")]: [
+          [path.resolve("./lib/middle/ho.js").replace(/\//g, "\\")]: [
             "../extra/file",
             "extra-pkg-app/nested/path"
           ],
