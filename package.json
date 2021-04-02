@@ -1,6 +1,6 @@
 {
   "name": "trace-deps",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "A dependency tracing tool.",
   "main": "index.js",
   "bin": {
