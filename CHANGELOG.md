@@ -1,6 +1,11 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Bug/Feature: Support relative paths from package name root in `allowMissing`.
+  [#49](https://github.com/FormidableLabs/trace-deps/issues/49)
+
 ## 0.3.8
 
 * Feature: Support application source paths in `allowMissing` configuration.
