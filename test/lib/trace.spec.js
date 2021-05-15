@@ -54,1403 +54,1418 @@ describe("lib/trace", () => {
   });
 
   describe("traceFile", () => {
-    it("throws on no source file", async () => {
-      await expect(traceFile()).to.be.rejectedWith("Empty source file path");
-    });
-
-    it("throws on nonexistent source file", async () => {
-      await expect(traceFile({ srcPath: "nope.js" })).to.be.rejectedWith(
-        "Could not find source file"
-      );
-    });
-
-    it("throws on nonexistent dependency", async () => {
-      mock({
-        "hi.js": "require('doesnt-exist');"
+    describe("common errors", () => {
+      it("throws on no source file", async () => {
+        await expect(traceFile()).to.be.rejectedWith("Empty source file path");
       });
 
-      await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
-        "Encountered resolution error in hi.js for doesnt-exist: "
-        + "Error: Cannot find module 'doesnt-exist' from '.'"
-      );
-    });
-
-    it("throws on nonexistent extra dependency", async () => {
-      mock({
-        "hi.js": "module.exports = require('./ho');",
-        "ho.js": "module.exports = 'ho';"
+      it("throws on nonexistent source file", async () => {
+        await expect(traceFile({ srcPath: "nope.js" })).to.be.rejectedWith(
+          "Could not find source file"
+        );
       });
 
-      await expect(traceFile({
-        srcPath: "hi.js",
-        extraImports: {
-          // Absolute path, so application source file with **full match**
-          // Use win32 path.
-          [path.resolve("ho.js")]: [
+      it("throws on nonexistent dependency", async () => {
+        mock({
+          "hi.js": "require('doesnt-exist');"
+        });
+
+        await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
+          "Encountered resolution error in hi.js for doesnt-exist: "
+          + "Error: Cannot find module 'doesnt-exist' from '.'"
+        );
+      });
+
+      it("throws on nonexistent extra dependency", async () => {
+        mock({
+          "hi.js": "module.exports = require('./ho');",
+          "ho.js": "module.exports = 'ho';"
+        });
+
+        await expect(traceFile({
+          srcPath: "hi.js",
+          extraImports: {
+            // Absolute path, so application source file with **full match**
+            // Use win32 path.
+            [path.resolve("ho.js")]: [
+              "extra-is-missing"
+            ]
+          }
+        })).to.be.rejectedWith(
+          `Encountered resolution error in ${path.resolve("ho.js")} for extra-is-missing: `
+          + `Error: Cannot find module 'extra-is-missing' from '${path.resolve(".")}'`
+        );
+      });
+
+      it("throws on syntax errors", async () => {
+        mock({
+          "hi.js": `
+            UN;&!PARSEABLE
+          `
+        });
+
+        const srcPath = "hi.js";
+        await expect(traceFile({ srcPath })).to.be.rejectedWith(
+          /Encountered parse error in .* SyntaxError: Unexpected token/
+        );
+      });
+    });
+
+    describe("bailOnMissing", () => {
+      it("handles nonexistent dependency with bailOnMissing=false", async () => {
+        mock({
+          "hi.js": "require('doesnt-exist');"
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({
+          srcPath,
+          bailOnMissing: false
+        });
+
+        expect(dependencies).to.eql(fullPaths([]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "doesnt-exist"
+          ]
+        }));
+      });
+
+      it("handles nonexistent extra dependency with bailOnMissing=false", async () => {
+        mock({
+          "hi.js": "module.exports = require('./ho');",
+          "ho.js": "module.exports = 'ho';"
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({
+          srcPath,
+          bailOnMissing: false,
+          extraImports: {
+            // Absolute path, so application source file with **full match**
+            // Use win32 path.
+            [path.resolve("ho.js")]: [
+              "extra-is-missing"
+            ]
+          }
+        });
+
+        expect(dependencies).to.eql(fullPaths([
+          "ho.js"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          "ho.js": [
             "extra-is-missing"
           ]
-        }
-      })).to.be.rejectedWith(
-        `Encountered resolution error in ${path.resolve("ho.js")} for extra-is-missing: `
-        + `Error: Cannot find module 'extra-is-missing' from '${path.resolve(".")}'`
-      );
-    });
-
-    it("handles nonexistent dependency with bailOnMissing=false", async () => {
-      mock({
-        "hi.js": "require('doesnt-exist');"
+        }));
       });
 
-      const srcPath = "hi.js";
-      const { dependencies, misses } = await traceFile({
-        srcPath,
-        bailOnMissing: false
-      });
+      it("handles try/catch misses requires", async () => {
+        mock({
+          "hi.js": `
+            require("one");
 
-      expect(dependencies).to.eql(fullPaths([]));
-      expect(missesMap({ misses })).to.eql(resolveObjKeys({
-        [srcPath]: [
-          "doesnt-exist"
-        ]
-      }));
-    });
-
-    it("handles nonexistent extra dependency with bailOnMissing=false", async () => {
-      mock({
-        "hi.js": "module.exports = require('./ho');",
-        "ho.js": "module.exports = 'ho';"
-      });
-
-      const srcPath = "hi.js";
-      const { dependencies, misses } = await traceFile({
-        srcPath,
-        bailOnMissing: false,
-        extraImports: {
-          // Absolute path, so application source file with **full match**
-          // Use win32 path.
-          [path.resolve("ho.js")]: [
-            "extra-is-missing"
-          ]
-        }
-      });
-
-      expect(dependencies).to.eql(fullPaths([
-        "ho.js"
-      ]));
-      expect(missesMap({ misses })).to.eql(resolveObjKeys({
-        "ho.js": [
-          "extra-is-missing"
-        ]
-      }));
-    });
-
-    it("handles no dependencies", async () => {
-      mock({
-        "hi.js": "module.exports = 'hi';"
-      });
-
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
-      expect(dependencies).to.eql([]);
-      expect(misses).to.eql({});
-    });
-
-    it("handles requires with .js", async () => {
-      mock({
-        "hi.js": `
-          const one = require("one");
-          require("two");
-          require(\`three\`);
-
-          const variableDep = "shouldnt-find";
-          require(variableDep);
-          require(\`interpolated_\${variableDep}\`);
-          require("binary" + "-expression");
-          require("binary" + variableDep);
-
-          const variableResolve = "also-shouldnt-find";
-          require.resolve(variableResolve);
-          require.resolve(\`interpolated_\${variableResolve}\`);
-          require.resolve("binary" + "-expression");
-          require.resolve("binary" + variableResolve);
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = 'one';"
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = 'two';"
-          },
-          three: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = 'three';"
-          }
-        }
-      });
-
-      const srcPath = "hi.js";
-      const { dependencies, sourceMaps, misses } = await traceFile({ srcPath });
-
-      expect(sourceMaps).to.be.an("undefined");
-
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/one/index.js",
-        "node_modules/one/package.json",
-        "node_modules/three/index.js",
-        "node_modules/three/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-
-      expect(missesMap({ misses })).to.eql(resolveObjKeys({
-        [srcPath]: [
-          "require(variableDep)",
-          "require(`interpolated_${variableDep}`)",
-          "require(\"binary\" + \"-expression\")",
-          "require(\"binary\" + variableDep)",
-          "require.resolve(variableResolve)",
-          "require.resolve(`interpolated_${variableResolve}`)",
-          "require.resolve(\"binary\" + \"-expression\")",
-          "require.resolve(\"binary\" + variableResolve)"
-        ]
-      }));
-    });
-
-    it("includes source map files", async () => {
-      mock({
-        "hi.js": `
-          const one = require("one");
-          require("two");
-          require(\`three\`);
-          require("./ho");
-
-          module.exports = 'hi';
-          //# sourceMappingURL=hi.js.map
-        `,
-        "hi.js.map": "{\"not\":\"real\"}",
-        "ho.js": `
-          module.exports = 'ho';
-          //# sourceMappingURL=/ABS/PATH/ho.js.map
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = 'one';
-
-              //# sourceMappingURL=early/map-comment/should-be-ignored
-
-              //# sourceMappingURL=../one/index.not-map-suffix
-            `,
-            "index.jsbundle": "{\"not\":\"read\"}"
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = 'two';
-
-              /*# sourceMappingURL=ignore/block/version.js.map */
-            `
-          },
-          three: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = 'three';
-
-              //# sourceMappingURL=https://ignore.com/http/and/https/urls.js.map
-            `
-          }
-        }
-      });
-
-      const srcPath = "hi.js";
-      const { dependencies, sourceMaps, misses } = await traceFile({
-        srcPath,
-        includeSourceMaps: true
-      });
-
-      expect(sourceMaps).to.eql(fullPaths([
-        "/ABS/PATH/ho.js.map",
-        "hi.js.map",
-        "node_modules/one/index.not-map-suffix"
-      ]));
-
-      expect(dependencies).to.eql(fullPaths([
-        "ho.js",
-        "node_modules/one/index.js",
-        "node_modules/one/package.json",
-        "node_modules/three/index.js",
-        "node_modules/three/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-
-      expect(missesMap({ misses })).to.eql(resolveObjKeys({}));
-    });
-
-    it("handles imports with .mjs", async () => {
-      mock({
-        "hi.mjs": `
-          import { one as oneVar } from "one";
-          import "two";
-          import * as three from "three";
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": "export const one = 'one';"
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": `
-              const two = 'two';
-              export default two;
-            `
-          },
-          three: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": `
-              const threeNum = 3;
-              const threeStr = 'three';
-              export { threeNum, threeStr }
-            `
-          }
-        }
-      });
-
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/one/index.mjs",
-        "node_modules/one/package.json",
-        "node_modules/three/index.mjs",
-        "node_modules/three/package.json",
-        "node_modules/two/index.mjs",
-        "node_modules/two/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
-
-    it("handles re-exports with .mjs", async () => {
-      mock({
-        "hi.mjs": `
-          export { one } from "one";
-          export { two as twoVar } from "two";
-          export * from "three";
-          export * as four from "four";
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": "export const one = 'one';"
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": "export const two = 'two';"
-          },
-          three: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": `
-              const threeNum = 3;
-              const threeStr = 'three';
-              export { threeNum, threeStr };
-            `
-          },
-          four: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": `
-              const four = 'four';
-              export default four;
-            `
-          }
-        }
-      });
-
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/four/index.mjs",
-        "node_modules/four/package.json",
-        "node_modules/one/index.mjs",
-        "node_modules/one/package.json",
-        "node_modules/three/index.mjs",
-        "node_modules/three/package.json",
-        "node_modules/two/index.mjs",
-        "node_modules/two/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
-
-    it("handles nested requires with .js", async () => {
-      mock({
-        "hi.js": `
-          const one = require("one");
-          if (one === "one") {
-            require.resolve("two");
-          }
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              const subDepOne = require("sub-dep-one");
-              module.exports = 'one';
-            `,
-            node_modules: {
-              "sub-dep-one": {
-                "package.json": stringify({
-                  main: "index.js"
-                }),
+            const { aFunction } = require("nested-first-level");
+            const { aFile } = require("nested-trycatch-requireresolve");
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = {
+                  one: () => "one",
+                  two: () => require("two").two
+                };
+              `
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = {
+                  two: () => "two"
+                };
+              `
+            },
+            "nested-first-level": {
+              "package.json": stringify({
+                main: "lib/index.js"
+              }),
+              lib: {
                 "index.js": `
-                  module.exports = 'one';
+                  const { aFunction } = require("nested-trycatch-require");
+
+                  module.exports = {
+                    aFunction
+                  };
                 `
               }
+            },
+            "nested-trycatch-require": {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                let aFunction;
+                try {
+                  aFunction = () => import("doesnt-exist/with/path.js");
+                } catch (err) {
+                  aFunction = () => null;
+                }
+
+                const nested = require("doesnt-exist-nested/one/more.js");
+
+                module.exports = { aFunction };
+              `
+            },
+            "nested-trycatch-requireresolve": {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                let noFile = null;
+                try {
+                  noFile = require.resolve("also-doesnt-exist");
+                } catch (err) {}
+
+                module.exports = { noFile };
+              `
             }
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              const subDepTwo = require("sub-dep-flattened-two");
-              module.exports = subDepTwo;
-            `
-          },
-          "sub-dep-flattened-two": {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = 'two';
-            `
           }
-        }
+        });
+
+        const { dependencies, misses } = await traceFile({
+          srcPath: "hi.js",
+          allowMissing: {
+            "nested-trycatch-require": [
+              "doesnt-exist",
+              "doesnt-exist-nested/one"
+            ],
+            "nested-trycatch-requireresolve": [
+              "also-doesnt-exist"
+            ]
+          }
+        });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/nested-first-level/lib/index.js",
+          "node_modules/nested-first-level/package.json",
+          "node_modules/nested-trycatch-require/index.js",
+          "node_modules/nested-trycatch-require/package.json",
+          "node_modules/nested-trycatch-requireresolve/index.js",
+          "node_modules/nested-trycatch-requireresolve/package.json",
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(misses).to.eql({});
       });
 
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/one/index.js",
-        "node_modules/one/node_modules/sub-dep-one/index.js",
-        "node_modules/one/node_modules/sub-dep-one/package.json",
-        "node_modules/one/package.json",
-        "node_modules/sub-dep-flattened-two/index.js",
-        "node_modules/sub-dep-flattened-two/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
+      it("handles misses in entry point app source", async () => {
+        mock({
+          "entry.js": `
+            require("missing-pkg");
+          `
+        });
 
-    it("handles requires with .js, .cjs, and no extensions", async () => {
-      mock({
-        "hi.js": `
-          const one = require("one");
-          if (one === "one") {
-            require.resolve("two");
+        const { dependencies, misses } = await traceFile({
+          srcPath: "entry.js",
+          allowMissing: {
+            [path.resolve("entry.js")]: [
+              "missing-pkg"
+            ]
           }
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              const subDepOne = require("sub-dep-one");
-              module.exports = 'one';
-            `,
-            node_modules: {
-              "sub-dep-one": {
-                "package.json": stringify({
-                  main: "index.cjs"
-                }),
-                "index.cjs": `
-                  require("./full-path-with-ext.cjs");
-                  require("./path-with-no-ext");
-                  require("./a-json-file-implied-ext");
-                  require("./a-json-file-with-ext.json");
-                  module.exports = 'one';
-                `,
-                "full-path-with-ext.cjs": `
-                  module.exports = 'full-path-with-ext';
-                `,
-                "path-with-no-ext": `
-                  module.exports = 'path-with-no-ext';
-                `,
-                "a-json-file-implied-ext.json": stringify({
-                  msg: "implied extension"
-                }),
-                "a-json-file-with-ext.json": stringify({
-                  msg: "with extension"
-                })
-              }
-            }
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              const subDepTwo = require("sub-dep-flattened-two");
-              module.exports = subDepTwo;
-            `
-          },
-          "sub-dep-flattened-two": {
-            "package.json": stringify({
-              main: "index.cjs"
-            }),
-            "index.cjs": `
-              module.exports = 'two';
-            `
-          }
-        }
+        });
+        expect(dependencies).to.eql(fullPaths([]));
+        expect(misses).to.eql({});
       });
 
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/one/index.js",
-        "node_modules/one/node_modules/sub-dep-one/a-json-file-implied-ext.json",
-        "node_modules/one/node_modules/sub-dep-one/a-json-file-with-ext.json",
-        "node_modules/one/node_modules/sub-dep-one/full-path-with-ext.cjs",
-        "node_modules/one/node_modules/sub-dep-one/index.cjs",
-        "node_modules/one/node_modules/sub-dep-one/package.json",
-        "node_modules/one/node_modules/sub-dep-one/path-with-no-ext",
-        "node_modules/one/package.json",
-        "node_modules/sub-dep-flattened-two/index.cjs",
-        "node_modules/sub-dep-flattened-two/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
+      it("handles misses in full path entry point app source", async () => {
+        mock({
+          "entry.js": `
+            require("missing-pkg");
+          `
+        });
 
-    it("handles dynamic imports with .js", async () => {
-      mock({
-        "hi.js": `
-          const one = require("one");
-          const dynamicTwo = () => import(\`two\`);
+        const { dependencies, misses } = await traceFile({
+          srcPath: path.resolve("entry.js"),
+          allowMissing: {
+            [path.resolve("entry.js")]: [
+              "missing-pkg"
+            ]
+          }
+        });
+        expect(dependencies).to.eql(fullPaths([]));
+        expect(misses).to.eql({});
+      });
 
-          (async () => {
-            await import("three");
+      it("handles misses in nested app source", async () => {
+        mock({
+          "entry.js": `
+            require("./nested");
+          `,
+          "nested.js": `
+            module.exports = require("missing-pkg");
+          `
+        });
 
-            const variableDep = "shouldnt-find";
-            await import(variableDep);
-            await import(variableResolve);
-            await import(\`interpolated_\${variableDep}\`);
-            await import("binary" + "-expression");
-            await import("binary" + variableDep);
-          })();
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = 'one';"
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = 'two';"
-          },
-          three: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": `
-              import three from "nested-three";
-              export default three;
-            `,
-            node_modules: {
-              "nested-three": {
-                "package.json": stringify({
-                  main: "index.mjs"
-                }),
-                "index.mjs": "export const three = 'three';"
+        const { dependencies, misses } = await traceFile({
+          srcPath: "entry.js",
+          allowMissing: {
+            [path.resolve("nested.js")]: [
+              "missing-pkg"
+            ]
+          }
+        });
+        expect(dependencies).to.eql(fullPaths([
+          "nested.js"
+        ]));
+        expect(misses).to.eql({});
+      });
+
+      // Regression test: https://github.com/FormidableLabs/trace-deps/issues/49
+      it("handles misses with package relative paths and prefix values", async () => {
+        mock({
+          "hi.js": `
+            require("pkg");
+          `,
+          node_modules: {
+            pkg: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                require("./one");
+                require("./nested/two.js");
+                require("missing");
+              `,
+              "one.js": `
+                require("missing/path/a");
+                require("missing-in-one");
+                require("missing-in-one-with-path/path/to/file.js");
+              `,
+              nested: {
+                "two.js": `
+                  require("missing/path/b");
+                  require("missing-in-two");
+                  require("missing-in-two-with-path/path/to/file.js");
+              `
               }
             }
           }
-        }
-      });
+        });
 
-      const srcPath = "hi.js";
-      const { dependencies, misses } = await traceFile({ srcPath });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/one/index.js",
-        "node_modules/one/package.json",
-        "node_modules/three/index.mjs",
-        "node_modules/three/node_modules/nested-three/index.mjs",
-        "node_modules/three/node_modules/nested-three/package.json",
-        "node_modules/three/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-      expect(missesMap({ misses })).to.eql(resolveObjKeys({
-        [srcPath]: [
-          "import(variableDep)",
-          "import(variableResolve)",
-          "import(`interpolated_${variableDep}`)",
-          "import(\"binary\" + \"-expression\")",
-          "import(\"binary\" + variableDep)"
-        ]
-      }));
-    });
-
-    it("handles dynamic imports with .mjs", async () => {
-      mock({
-        "hi.mjs": `
-          import one from "one";
-          const dynamicTwo = () => import("two");
-
-          (async () => {
-            await import("three");
-
-            const variableDep = "shouldnt-find";
-            await import(variableDep);
-          })();
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": `
-              const one = 'one';
-              export default one;
-            `
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": `
-              const two = 'two';
-              export default two;
-            `
-          },
-          three: {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": `
-              import three from "nested-flattened-three";
-              export default three;
-            `
-          },
-          "nested-flattened-three": {
-            "package.json": stringify({
-              main: "index.mjs"
-            }),
-            "index.mjs": "export const three = 'three';"
+        const { dependencies, misses } = await traceFile({
+          srcPath: "hi.js",
+          allowMissing: {
+            pkg: [
+              "missing"
+            ],
+            "pkg/one.js": [
+              "missing-in-one",
+              "missing-in-one-with-path/path" // partial path
+            ],
+            "pkg/nested/two.js": [
+              "missing-in-two",
+              "missing-in-two-with-path/path/to/file.js" // full path
+            ]
           }
-        }
+        });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/pkg/index.js",
+          "node_modules/pkg/nested/two.js",
+          "node_modules/pkg/one.js",
+          "node_modules/pkg/package.json"
+        ]));
+        expect(misses).to.eql({});
       });
-
-      const srcPath = "hi.mjs";
-      const { dependencies, misses } = await traceFile({ srcPath });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/nested-flattened-three/index.mjs",
-        "node_modules/nested-flattened-three/package.json",
-        "node_modules/one/index.mjs",
-        "node_modules/one/package.json",
-        "node_modules/three/index.mjs",
-        "node_modules/three/package.json",
-        "node_modules/two/index.mjs",
-        "node_modules/two/package.json"
-      ]));
-      expect(missesMap({ misses })).to.eql(resolveObjKeys({
-        [srcPath]: [
-          "import(variableDep)"
-        ]
-      }));
     });
 
-    it("handles lower directories than where file is located", async () => {
-      mock({
-        nested: {
-          path: {
-            "hi.js": `
-              const one = require("one");
-              require("two");
-            `
+    describe("includeSourceMaps", () => {
+      it("includes source map files", async () => {
+        mock({
+          "hi.js": `
+            const one = require("one");
+            require("two");
+            require(\`three\`);
+            require("./ho");
+
+            module.exports = 'hi';
+            //# sourceMappingURL=hi.js.map
+          `,
+          "hi.js.map": "{\"not\":\"real\"}",
+          "ho.js": `
+            module.exports = 'ho';
+            //# sourceMappingURL=/ABS/PATH/ho.js.map
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'one';
+
+                //# sourceMappingURL=early/map-comment/should-be-ignored
+
+                //# sourceMappingURL=../one/index.not-map-suffix
+              `,
+              "index.jsbundle": "{\"not\":\"read\"}"
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'two';
+
+                /*# sourceMappingURL=ignore/block/version.js.map */
+              `
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'three';
+
+                //# sourceMappingURL=https://ignore.com/http/and/https/urls.js.map
+              `
+            }
+          }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, sourceMaps, misses } = await traceFile({
+          srcPath,
+          includeSourceMaps: true
+        });
+
+        expect(sourceMaps).to.eql(fullPaths([
+          "/ABS/PATH/ho.js.map",
+          "hi.js.map",
+          "node_modules/one/index.not-map-suffix"
+        ]));
+
+        expect(dependencies).to.eql(fullPaths([
+          "ho.js",
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({}));
+      });
+    });
+
+    describe("extraImports", () => {
+      it("adds extraImports", async () => {
+        mock({
+          "hi.js": `
+            require("./lib/middle/ho");
+            require("./lib/middle/how");
+            require("one");
+          `,
+          lib: {
+            middle: {
+              "ho.js": `
+                module.exports = "No actual missing imports";
+              `,
+              "how.js": `
+                module.exports = "No actual missing imports";
+              `
+            },
+            extra: {
+              "file.js": `
+                module.exports = "Not imported directly";
+              `,
+              "file2.js": `
+                module.exports = "Not imported directly";
+              `
+            }
           },
           node_modules: {
             one: {
               "package.json": stringify({
                 main: "index.js"
               }),
+              "index.js": `
+                require("./lib/nested/deeper-one");
+
+                module.exports = {
+                  one: () => "one",
+                  two: () => require("two").two
+                };
+              `,
+              lib: {
+                nested: {
+                  "deeper-one.js": `
+                    module.exports = require(process.env.MISSING_DYNAMIC_IMPORT);
+                  `
+                }
+              }
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = {
+                  two: () => "two"
+                };
+              `
+            },
+            "extra-pkg-app": {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = "Not directly imported via extraImports";
+              `,
+              nested: {
+                "path.js": `
+                  module.exports = "Directly imported via extraImports";
+                `
+              }
+            },
+            "extra-pkg-one": {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = "Directly imported via extraImports";
+              `
+            },
+            "extra-pkg-from-extra-import": {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = "An extraImports bring this one in!";
+              `
+            }
+          }
+        });
+
+        const { dependencies, misses } = await traceFile({
+          srcPath: "hi.js",
+          extraImports: {
+            // Absolute path, so application source file with **full match**
+            // Use win32 path.
+            [path.resolve("./lib/middle/ho.js").replace(/\//g, "\\")]: [
+              "../extra/file",
+              "extra-pkg-app/nested/path"
+            ],
+            // Use posix path.
+            [path.resolve("./lib/middle/how.js")]: [
+              "../extra/file2"
+            ],
+            // Package, so relative match after _last_ `node_modules`.
+            "one/lib/nested/deeper-one.js": [
+              "extra-pkg-one"
+            ],
+            // Package from the **above** extra import! Should also get traversed
+            // same as the other ones...
+            "extra-pkg-one/index.js": [
+              "extra-pkg-from-extra-import"
+            ]
+          }
+        });
+        expect(dependencies).to.eql(fullPaths([
+          "lib/extra/file.js",
+          "lib/extra/file2.js",
+          "lib/middle/ho.js",
+          "lib/middle/how.js",
+          "node_modules/extra-pkg-app/nested/path.js",
+          "node_modules/extra-pkg-app/package.json",
+          "node_modules/extra-pkg-from-extra-import/index.js",
+          "node_modules/extra-pkg-from-extra-import/package.json",
+          "node_modules/extra-pkg-one/index.js",
+          "node_modules/extra-pkg-one/package.json",
+          "node_modules/one/index.js",
+          "node_modules/one/lib/nested/deeper-one.js",
+          "node_modules/one/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          "node_modules/one/lib/nested/deeper-one.js": [
+            "require(process.env.MISSING_DYNAMIC_IMPORT)"
+          ]
+        }));
+      });
+    });
+
+    describe("common tracing", () => {
+      it("handles no dependencies", async () => {
+        mock({
+          "hi.js": "module.exports = 'hi';"
+        });
+
+        const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
+        expect(dependencies).to.eql([]);
+        expect(misses).to.eql({});
+      });
+
+      it("handles requires with .js", async () => {
+        mock({
+          "hi.js": `
+            const one = require("one");
+            require("two");
+            require(\`three\`);
+
+            const variableDep = "shouldnt-find";
+            require(variableDep);
+            require(\`interpolated_\${variableDep}\`);
+            require("binary" + "-expression");
+            require("binary" + variableDep);
+
+            const variableResolve = "also-shouldnt-find";
+            require.resolve(variableResolve);
+            require.resolve(\`interpolated_\${variableResolve}\`);
+            require.resolve("binary" + "-expression");
+            require.resolve("binary" + variableResolve);
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
               "index.js": "module.exports = 'one';"
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = 'two';"
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = 'three';"
             }
           }
-        },
-        node_modules: {
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = 'two';"
-          }
-        }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, sourceMaps, misses } = await traceFile({ srcPath });
+
+        expect(sourceMaps).to.be.an("undefined");
+
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "require(variableDep)",
+            "require(`interpolated_${variableDep}`)",
+            "require(\"binary\" + \"-expression\")",
+            "require(\"binary\" + variableDep)",
+            "require.resolve(variableResolve)",
+            "require.resolve(`interpolated_${variableResolve}`)",
+            "require.resolve(\"binary\" + \"-expression\")",
+            "require.resolve(\"binary\" + variableResolve)"
+          ]
+        }));
       });
 
-      const { dependencies, misses } = await traceFile({ srcPath: "nested/path/hi.js" });
-      expect(dependencies).to.eql(fullPaths([
-        "nested/node_modules/one/index.js",
-        "nested/node_modules/one/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
-
-    it("handles circular dependencies", async () => {
-      mock({
-        "hi.js": `
-          // All are circular. Import two of them.
-          require("one");
-          require("three");
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                one: () => "one",
-                two: () => require("two").two
-              };
-            `
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                two: () => "two",
-                three: () => require("three").three
-              };
-            `
-          },
-          three: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                three: () => "three",
-                four: () => require("four").four
-              };
-            `
-          },
-          four: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                one: () => require("one").one,
-                four: () => "four"
-              };
-            `
-          }
-        }
-      });
-
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/four/index.js",
-        "node_modules/four/package.json",
-        "node_modules/one/index.js",
-        "node_modules/one/package.json",
-        "node_modules/three/index.js",
-        "node_modules/three/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
-
-    it("ignores specified names and prefixes", async () => {
-      mock({
-        "hi.js": `
-          require("one");
-          const nope = () => import("doesnt-exist");
-          const nestedNope = () => import("doesnt-exist-nested/one/two");
-          const nestedMore = () => import("doesnt-exist-nested/one/even/more.js");
-          require.resolve("does-exist-shouldnt-import/index");
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              require("doesnt-exist");
-
-              module.exports = {
-                one: () => "one",
-                two: () => require("two").two
-              };
-            `
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                two: () => "two"
-              };
-            `
-          },
-          "does-exist-shouldnt-import": {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = "does-exist-shouldnt-import";
-            `
-          }
-        }
-      });
-
-      const { dependencies, misses } = await traceFile({
-        srcPath: "hi.js",
-        ignores: [
-          "doesnt-exist",
-          "doesnt-exist-nested/one",
-          "does-exist-shouldnt-import"
-        ]
-      });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/one/index.js",
-        "node_modules/one/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
-
-    it("handles try/catch misses requires", async () => {
-      mock({
-        "hi.js": `
-          require("one");
-
-          const { aFunction } = require("nested-first-level");
-          const { aFile } = require("nested-trycatch-requireresolve");
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                one: () => "one",
-                two: () => require("two").two
-              };
-            `
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                two: () => "two"
-              };
-            `
-          },
-          "nested-first-level": {
-            "package.json": stringify({
-              main: "lib/index.js"
-            }),
-            lib: {
-              "index.js": `
-                const { aFunction } = require("nested-trycatch-require");
-
-                module.exports = {
-                  aFunction
-                };
+      it("handles imports with .mjs", async () => {
+        mock({
+          "hi.mjs": `
+            import { one as oneVar } from "one";
+            import "two";
+            import * as three from "three";
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": "export const one = 'one';"
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                const two = 'two';
+                export default two;
+              `
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                const threeNum = 3;
+                const threeStr = 'three';
+                export { threeNum, threeStr }
               `
             }
-          },
-          "nested-trycatch-require": {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              let aFunction;
-              try {
-                aFunction = () => import("doesnt-exist/with/path.js");
-              } catch (err) {
-                aFunction = () => null;
-              }
-
-              const nested = require("doesnt-exist-nested/one/more.js");
-
-              module.exports = { aFunction };
-            `
-          },
-          "nested-trycatch-requireresolve": {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              let noFile = null;
-              try {
-                noFile = require.resolve("also-doesnt-exist");
-              } catch (err) {}
-
-              module.exports = { noFile };
-            `
           }
-        }
+        });
+
+        const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.mjs",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/package.json",
+          "node_modules/two/index.mjs",
+          "node_modules/two/package.json"
+        ]));
+        expect(misses).to.eql({});
       });
 
-      const { dependencies, misses } = await traceFile({
-        srcPath: "hi.js",
-        allowMissing: {
-          "nested-trycatch-require": [
-            "doesnt-exist",
-            "doesnt-exist-nested/one"
-          ],
-          "nested-trycatch-requireresolve": [
-            "also-doesnt-exist"
-          ]
-        }
-      });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/nested-first-level/lib/index.js",
-        "node_modules/nested-first-level/package.json",
-        "node_modules/nested-trycatch-require/index.js",
-        "node_modules/nested-trycatch-require/package.json",
-        "node_modules/nested-trycatch-requireresolve/index.js",
-        "node_modules/nested-trycatch-requireresolve/package.json",
-        "node_modules/one/index.js",
-        "node_modules/one/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
-
-    it("still errors on missing imports in a catch", async () => {
-      mock({
-        "hi.js": `
-          const { aFunction } = require("nested-first-level");
-        `,
-        node_modules: {
-          "nested-first-level": {
-            "package.json": stringify({
-              main: "lib/index.js"
-            }),
-            lib: {
-              "index.js": `
-                const { aFunction } = require("nested-trycatch-require");
-
-                module.exports = {
-                  aFunction
-                };
+      it("handles re-exports with .mjs", async () => {
+        mock({
+          "hi.mjs": `
+            export { one } from "one";
+            export { two as twoVar } from "two";
+            export * from "three";
+            export * as four from "four";
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": "export const one = 'one';"
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": "export const two = 'two';"
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                const threeNum = 3;
+                const threeStr = 'three';
+                export { threeNum, threeStr };
+              `
+            },
+            four: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                const four = 'four';
+                export default four;
               `
             }
-          },
-          "nested-trycatch-require": {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              let aFunction;
-              try {
-                aFunction = () => import("doesnt-exist/with/path.js");
-              } catch (err) {
-                aFunction = () => null;
-              }
-
-              module.exports = { aFunction };
-            `
           }
-        }
+        });
+
+        const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/four/index.mjs",
+          "node_modules/four/package.json",
+          "node_modules/one/index.mjs",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/package.json",
+          "node_modules/two/index.mjs",
+          "node_modules/two/package.json"
+        ]));
+        expect(misses).to.eql({});
       });
 
-      await expect(traceFile({
-        srcPath: "hi.js",
-        allowMissing: {
-          "nested-first-level": [
-            // This won't be a permitted missing because only `nested-trycatch-require` is checked.
-            "doesnt-exist"
-          ]
-        }
-      })).to.be.rejectedWith(
-        /Encountered resolution error in .*nested-trycatch-require.* for doesnt-exist.*/
-      );
-    });
-
-    it("handles misses in entry point app source", async () => {
-      mock({
-        "entry.js": `
-          require("missing-pkg");
-        `
-      });
-
-      const { dependencies, misses } = await traceFile({
-        srcPath: "entry.js",
-        allowMissing: {
-          [path.resolve("entry.js")]: [
-            "missing-pkg"
-          ]
-        }
-      });
-      expect(dependencies).to.eql(fullPaths([]));
-      expect(misses).to.eql({});
-    });
-
-    it("handles misses in full path entry point app source", async () => {
-      mock({
-        "entry.js": `
-          require("missing-pkg");
-        `
-      });
-
-      const { dependencies, misses } = await traceFile({
-        srcPath: path.resolve("entry.js"),
-        allowMissing: {
-          [path.resolve("entry.js")]: [
-            "missing-pkg"
-          ]
-        }
-      });
-      expect(dependencies).to.eql(fullPaths([]));
-      expect(misses).to.eql({});
-    });
-
-    it("handles misses in nested app source", async () => {
-      mock({
-        "entry.js": `
-          require("./nested");
-        `,
-        "nested.js": `
-          module.exports = require("missing-pkg");
-        `
-      });
-
-      const { dependencies, misses } = await traceFile({
-        srcPath: "entry.js",
-        allowMissing: {
-          [path.resolve("nested.js")]: [
-            "missing-pkg"
-          ]
-        }
-      });
-      expect(dependencies).to.eql(fullPaths([
-        "nested.js"
-      ]));
-      expect(misses).to.eql({});
-    });
-
-    // Regression test: https://github.com/FormidableLabs/trace-deps/issues/49
-    it("handles misses with package relative paths and prefix values", async () => {
-      mock({
-        "hi.js": `
-          require("pkg");
-        `,
-        node_modules: {
-          pkg: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              require("./one");
-              require("./nested/two.js");
-              require("missing");
-            `,
-            "one.js": `
-              require("missing/path/a");
-              require("missing-in-one");
-              require("missing-in-one-with-path/path/to/file.js");
-            `,
-            nested: {
-              "two.js": `
-                require("missing/path/b");
-                require("missing-in-two");
-                require("missing-in-two-with-path/path/to/file.js");
-            `
+      it("handles nested requires with .js", async () => {
+        mock({
+          "hi.js": `
+            const one = require("one");
+            if (one === "one") {
+              require.resolve("two");
+            }
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                const subDepOne = require("sub-dep-one");
+                module.exports = 'one';
+              `,
+              node_modules: {
+                "sub-dep-one": {
+                  "package.json": stringify({
+                    main: "index.js"
+                  }),
+                  "index.js": `
+                    module.exports = 'one';
+                  `
+                }
+              }
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                const subDepTwo = require("sub-dep-flattened-two");
+                module.exports = subDepTwo;
+              `
+            },
+            "sub-dep-flattened-two": {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'two';
+              `
             }
           }
-        }
+        });
+
+        const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/node_modules/sub-dep-one/index.js",
+          "node_modules/one/node_modules/sub-dep-one/package.json",
+          "node_modules/one/package.json",
+          "node_modules/sub-dep-flattened-two/index.js",
+          "node_modules/sub-dep-flattened-two/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(misses).to.eql({});
       });
 
-      const { dependencies, misses } = await traceFile({
-        srcPath: "hi.js",
-        allowMissing: {
-          pkg: [
-            "missing"
-          ],
-          "pkg/one.js": [
-            "missing-in-one",
-            "missing-in-one-with-path/path" // partial path
-          ],
-          "pkg/nested/two.js": [
-            "missing-in-two",
-            "missing-in-two-with-path/path/to/file.js" // full path
-          ]
-        }
-      });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/pkg/index.js",
-        "node_modules/pkg/nested/two.js",
-        "node_modules/pkg/one.js",
-        "node_modules/pkg/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
-
-    it("handles missing package.json:main and index.json", async () => {
-      mock({
-        "hi.js": `
-          require("one");
-          require("two");
-          require("three");
-        `,
-        node_modules: {
-          // `resolve()` can handle this straight up.
-          one: {
-            "package.json": stringify({
-              main: "index.json"
-            }),
-            "index.json": JSON.stringify([
-              "one",
-              "1"
-            ])
-          },
-          // `resolve()` **can't** handle this.
-          two: {
-            "package.json": stringify({
-            }),
-            "index.json": JSON.stringify([
-              "two",
-              "2"
-            ])
-          },
-          // `resolve()` can handle this straight up.
-          three: {
-            "package.json": stringify({
-            }),
-            "index.js": "module.exports = 'three';"
+      it("handles requires with .js, .cjs, and no extensions", async () => {
+        mock({
+          "hi.js": `
+            const one = require("one");
+            if (one === "one") {
+              require.resolve("two");
+            }
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                const subDepOne = require("sub-dep-one");
+                module.exports = 'one';
+              `,
+              node_modules: {
+                "sub-dep-one": {
+                  "package.json": stringify({
+                    main: "index.cjs"
+                  }),
+                  "index.cjs": `
+                    require("./full-path-with-ext.cjs");
+                    require("./path-with-no-ext");
+                    require("./a-json-file-implied-ext");
+                    require("./a-json-file-with-ext.json");
+                    module.exports = 'one';
+                  `,
+                  "full-path-with-ext.cjs": `
+                    module.exports = 'full-path-with-ext';
+                  `,
+                  "path-with-no-ext": `
+                    module.exports = 'path-with-no-ext';
+                  `,
+                  "a-json-file-implied-ext.json": stringify({
+                    msg: "implied extension"
+                  }),
+                  "a-json-file-with-ext.json": stringify({
+                    msg: "with extension"
+                  })
+                }
+              }
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                const subDepTwo = require("sub-dep-flattened-two");
+                module.exports = subDepTwo;
+              `
+            },
+            "sub-dep-flattened-two": {
+              "package.json": stringify({
+                main: "index.cjs"
+              }),
+              "index.cjs": `
+                module.exports = 'two';
+              `
+            }
           }
-        }
+        });
+
+        const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/node_modules/sub-dep-one/a-json-file-implied-ext.json",
+          "node_modules/one/node_modules/sub-dep-one/a-json-file-with-ext.json",
+          "node_modules/one/node_modules/sub-dep-one/full-path-with-ext.cjs",
+          "node_modules/one/node_modules/sub-dep-one/index.cjs",
+          "node_modules/one/node_modules/sub-dep-one/package.json",
+          "node_modules/one/node_modules/sub-dep-one/path-with-no-ext",
+          "node_modules/one/package.json",
+          "node_modules/sub-dep-flattened-two/index.cjs",
+          "node_modules/sub-dep-flattened-two/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(misses).to.eql({});
       });
 
-      const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/one/index.json",
-        "node_modules/one/package.json",
-        "node_modules/three/index.js",
-        "node_modules/three/package.json",
-        "node_modules/two/index.json",
-        "node_modules/two/package.json"
-      ]));
-      expect(misses).to.eql({});
-    });
+      it("handles dynamic imports with .js", async () => {
+        mock({
+          "hi.js": `
+            const one = require("one");
+            const dynamicTwo = () => import(\`two\`);
 
-    it("reports on complex, nested misses", async () => {
-      mock({
-        "hi.js": `
-          const one = require("one");
-          require("two");
-          require(\`three\`);
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              const more = require("./more");
-              const variableDep = "shouldnt-find-one";
-              const fn = () => require(variableDep);
+            (async () => {
+              await import("three");
 
-              module.exports = 'one';
-            `,
-            "more.js": `
-              require(\`interpolated_\${variableDep}\`);
-              require("binary" + "-expression");
-              require("binary" + variableDep);
-              module.exports = "one-more";
-            `
-          },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = 'two';"
-          },
-          three: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": "module.exports = require('three-more');",
+              const variableDep = "shouldnt-find";
+              await import(variableDep);
+              await import(variableResolve);
+              await import(\`interpolated_\${variableDep}\`);
+              await import("binary" + "-expression");
+              await import("binary" + variableDep);
+            })();
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = 'one';"
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = 'two';"
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                import three from "nested-three";
+                export default three;
+              `,
+              node_modules: {
+                "nested-three": {
+                  "package.json": stringify({
+                    main: "index.mjs"
+                  }),
+                  "index.mjs": "export const three = 'three';"
+                }
+              }
+            }
+          }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({ srcPath });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/node_modules/nested-three/index.mjs",
+          "node_modules/three/node_modules/nested-three/package.json",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "import(variableDep)",
+            "import(variableResolve)",
+            "import(`interpolated_${variableDep}`)",
+            "import(\"binary\" + \"-expression\")",
+            "import(\"binary\" + variableDep)"
+          ]
+        }));
+      });
+
+      it("handles dynamic imports with .mjs", async () => {
+        mock({
+          "hi.mjs": `
+            import one from "one";
+            const dynamicTwo = () => import("two");
+
+            (async () => {
+              await import("three");
+
+              const variableDep = "shouldnt-find";
+              await import(variableDep);
+            })();
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                const one = 'one';
+                export default one;
+              `
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                const two = 'two';
+                export default two;
+              `
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                import three from "nested-flattened-three";
+                export default three;
+              `
+            },
+            "nested-flattened-three": {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": "export const three = 'three';"
+            }
+          }
+        });
+
+        const srcPath = "hi.mjs";
+        const { dependencies, misses } = await traceFile({ srcPath });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/nested-flattened-three/index.mjs",
+          "node_modules/nested-flattened-three/package.json",
+          "node_modules/one/index.mjs",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/package.json",
+          "node_modules/two/index.mjs",
+          "node_modules/two/package.json"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "import(variableDep)"
+          ]
+        }));
+      });
+
+      it("handles lower directories than where file is located", async () => {
+        mock({
+          nested: {
+            path: {
+              "hi.js": `
+                const one = require("one");
+                require("two");
+              `
+            },
             node_modules: {
-              "three-more": {
+              one: {
                 "package.json": stringify({
                   main: "index.js"
                 }),
-                "index.js": "module.exports = require('./more');",
-                "more.js": `
-                  const variableResolve = "also-shouldnt-find";
-                  require.resolve(variableResolve);
-                  require.resolve(\`interpolated_\${variableResolve}\`);
-                  require.resolve("binary" + "-expression");
-                  require.resolve("binary" + variableResolve);
-
-                  module.exports = 'three-more-more!';
-                `
-              }
-            }
-          }
-        }
-      });
-
-      const srcPath = "hi.js";
-      const { dependencies, misses } = await traceFile({ srcPath });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/one/index.js",
-        "node_modules/one/more.js",
-        "node_modules/one/package.json",
-        "node_modules/three/index.js",
-        "node_modules/three/node_modules/three-more/index.js",
-        "node_modules/three/node_modules/three-more/more.js",
-        "node_modules/three/node_modules/three-more/package.json",
-        "node_modules/three/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-
-      expect(missesMap({ misses })).to.be.eql(resolveObjKeys({
-        "node_modules/one/index.js": [
-          "require(variableDep)"
-        ],
-        "node_modules/one/more.js": [
-          "require(`interpolated_${variableDep}`)",
-          "require(\"binary\" + \"-expression\")",
-          "require(\"binary\" + variableDep)"
-        ],
-        "node_modules/three/node_modules/three-more/more.js": [
-          "require.resolve(variableResolve)",
-          "require.resolve(`interpolated_${variableResolve}`)",
-          "require.resolve(\"binary\" + \"-expression\")",
-          "require.resolve(\"binary\" + variableResolve)"
-        ]
-      }));
-    });
-
-    it("errors on syntax errors", async () => {
-      mock({
-        "hi.js": `
-          UN;&!PARSEABLE
-        `
-      });
-
-      const srcPath = "hi.js";
-      await expect(traceFile({ srcPath })).to.be.rejectedWith(
-        /Encountered parse error in .* SyntaxError: Unexpected token/
-      );
-    });
-
-    it("handles already declared identifier code", async () => {
-      mock({
-        "hi.js": `
-          var foo = foo;
-
-          function foo() { return "Wow, this is valid!"; }
-
-          require("one");
-        `,
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = 'one';
-            `
-          }
-        }
-      });
-
-      const srcPath = "hi.js";
-      const { dependencies, misses } = await traceFile({ srcPath });
-      expect(dependencies).to.eql(fullPaths([
-        "node_modules/one/index.js",
-        "node_modules/one/package.json"
-      ]));
-
-      expect(missesMap({ misses })).to.be.eql({});
-    });
-
-    it("adds extraImports", async () => {
-      mock({
-        "hi.js": `
-          require("./lib/middle/ho");
-          require("./lib/middle/how");
-          require("one");
-        `,
-        lib: {
-          middle: {
-            "ho.js": `
-              module.exports = "No actual missing imports";
-            `,
-            "how.js": `
-              module.exports = "No actual missing imports";
-            `
-          },
-          extra: {
-            "file.js": `
-              module.exports = "Not imported directly";
-            `,
-            "file2.js": `
-              module.exports = "Not imported directly";
-            `
-          }
-        },
-        node_modules: {
-          one: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              require("./lib/nested/deeper-one");
-
-              module.exports = {
-                one: () => "one",
-                two: () => require("two").two
-              };
-            `,
-            lib: {
-              nested: {
-                "deeper-one.js": `
-                  module.exports = require(process.env.MISSING_DYNAMIC_IMPORT);
-                `
+                "index.js": "module.exports = 'one';"
               }
             }
           },
-          two: {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = {
-                two: () => "two"
-              };
-            `
-          },
-          "extra-pkg-app": {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = "Not directly imported via extraImports";
-            `,
-            nested: {
-              "path.js": `
-                module.exports = "Directly imported via extraImports";
+          node_modules: {
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = 'two';"
+            }
+          }
+        });
+
+        const { dependencies, misses } = await traceFile({ srcPath: "nested/path/hi.js" });
+        expect(dependencies).to.eql(fullPaths([
+          "nested/node_modules/one/index.js",
+          "nested/node_modules/one/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(misses).to.eql({});
+      });
+
+      it("handles circular dependencies", async () => {
+        mock({
+          "hi.js": `
+            // All are circular. Import two of them.
+            require("one");
+            require("three");
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = {
+                  one: () => "one",
+                  two: () => require("two").two
+                };
+              `
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = {
+                  two: () => "two",
+                  three: () => require("three").three
+                };
+              `
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = {
+                  three: () => "three",
+                  four: () => require("four").four
+                };
+              `
+            },
+            four: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = {
+                  one: () => require("one").one,
+                  four: () => "four"
+                };
               `
             }
-          },
-          "extra-pkg-one": {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = "Directly imported via extraImports";
-            `
-          },
-          "extra-pkg-from-extra-import": {
-            "package.json": stringify({
-              main: "index.js"
-            }),
-            "index.js": `
-              module.exports = "An extraImports bring this one in!";
-            `
           }
-        }
+        });
+
+        const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/four/index.js",
+          "node_modules/four/package.json",
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(misses).to.eql({});
       });
 
-      const { dependencies, misses } = await traceFile({
-        srcPath: "hi.js",
-        extraImports: {
-          // Absolute path, so application source file with **full match**
-          // Use win32 path.
-          [path.resolve("./lib/middle/ho.js").replace(/\//g, "\\")]: [
-            "../extra/file",
-            "extra-pkg-app/nested/path"
-          ],
-          // Use posix path.
-          [path.resolve("./lib/middle/how.js")]: [
-            "../extra/file2"
-          ],
-          // Package, so relative match after _last_ `node_modules`.
-          "one/lib/nested/deeper-one.js": [
-            "extra-pkg-one"
-          ],
-          // Package from the **above** extra import! Should also get traversed
-          // same as the other ones...
-          "extra-pkg-one/index.js": [
-            "extra-pkg-from-extra-import"
+      it("ignores specified names and prefixes", async () => {
+        mock({
+          "hi.js": `
+            require("one");
+            const nope = () => import("doesnt-exist");
+            const nestedNope = () => import("doesnt-exist-nested/one/two");
+            const nestedMore = () => import("doesnt-exist-nested/one/even/more.js");
+            require.resolve("does-exist-shouldnt-import/index");
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                require("doesnt-exist");
+
+                module.exports = {
+                  one: () => "one",
+                  two: () => require("two").two
+                };
+              `
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = {
+                  two: () => "two"
+                };
+              `
+            },
+            "does-exist-shouldnt-import": {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = "does-exist-shouldnt-import";
+              `
+            }
+          }
+        });
+
+        const { dependencies, misses } = await traceFile({
+          srcPath: "hi.js",
+          ignores: [
+            "doesnt-exist",
+            "doesnt-exist-nested/one",
+            "does-exist-shouldnt-import"
           ]
-        }
+        });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(misses).to.eql({});
       });
-      expect(dependencies).to.eql(fullPaths([
-        "lib/extra/file.js",
-        "lib/extra/file2.js",
-        "lib/middle/ho.js",
-        "lib/middle/how.js",
-        "node_modules/extra-pkg-app/nested/path.js",
-        "node_modules/extra-pkg-app/package.json",
-        "node_modules/extra-pkg-from-extra-import/index.js",
-        "node_modules/extra-pkg-from-extra-import/package.json",
-        "node_modules/extra-pkg-one/index.js",
-        "node_modules/extra-pkg-one/package.json",
-        "node_modules/one/index.js",
-        "node_modules/one/lib/nested/deeper-one.js",
-        "node_modules/one/package.json",
-        "node_modules/two/index.js",
-        "node_modules/two/package.json"
-      ]));
-      expect(missesMap({ misses })).to.eql(resolveObjKeys({
-        "node_modules/one/lib/nested/deeper-one.js": [
-          "require(process.env.MISSING_DYNAMIC_IMPORT)"
-        ]
-      }));
+
+      it("still errors on missing imports in a catch", async () => {
+        mock({
+          "hi.js": `
+            const { aFunction } = require("nested-first-level");
+          `,
+          node_modules: {
+            "nested-first-level": {
+              "package.json": stringify({
+                main: "lib/index.js"
+              }),
+              lib: {
+                "index.js": `
+                  const { aFunction } = require("nested-trycatch-require");
+
+                  module.exports = {
+                    aFunction
+                  };
+                `
+              }
+            },
+            "nested-trycatch-require": {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                let aFunction;
+                try {
+                  aFunction = () => import("doesnt-exist/with/path.js");
+                } catch (err) {
+                  aFunction = () => null;
+                }
+
+                module.exports = { aFunction };
+              `
+            }
+          }
+        });
+
+        await expect(traceFile({
+          srcPath: "hi.js",
+          allowMissing: {
+            "nested-first-level": [
+              // This won't be a permitted missing because only
+              // `nested-trycatch-require` is checked.
+              "doesnt-exist"
+            ]
+          }
+        })).to.be.rejectedWith(
+          /Encountered resolution error in .*nested-trycatch-require.* for doesnt-exist.*/
+        );
+      });
+
+      it("reports on complex, nested misses", async () => {
+        mock({
+          "hi.js": `
+            const one = require("one");
+            require("two");
+            require(\`three\`);
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                const more = require("./more");
+                const variableDep = "shouldnt-find-one";
+                const fn = () => require(variableDep);
+
+                module.exports = 'one';
+              `,
+              "more.js": `
+                require(\`interpolated_\${variableDep}\`);
+                require("binary" + "-expression");
+                require("binary" + variableDep);
+                module.exports = "one-more";
+              `
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = 'two';"
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": "module.exports = require('three-more');",
+              node_modules: {
+                "three-more": {
+                  "package.json": stringify({
+                    main: "index.js"
+                  }),
+                  "index.js": "module.exports = require('./more');",
+                  "more.js": `
+                    const variableResolve = "also-shouldnt-find";
+                    require.resolve(variableResolve);
+                    require.resolve(\`interpolated_\${variableResolve}\`);
+                    require.resolve("binary" + "-expression");
+                    require.resolve("binary" + variableResolve);
+
+                    module.exports = 'three-more-more!';
+                  `
+                }
+              }
+            }
+          }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({ srcPath });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/more.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/node_modules/three-more/index.js",
+          "node_modules/three/node_modules/three-more/more.js",
+          "node_modules/three/node_modules/three-more/package.json",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+
+        expect(missesMap({ misses })).to.be.eql(resolveObjKeys({
+          "node_modules/one/index.js": [
+            "require(variableDep)"
+          ],
+          "node_modules/one/more.js": [
+            "require(`interpolated_${variableDep}`)",
+            "require(\"binary\" + \"-expression\")",
+            "require(\"binary\" + variableDep)"
+          ],
+          "node_modules/three/node_modules/three-more/more.js": [
+            "require.resolve(variableResolve)",
+            "require.resolve(`interpolated_${variableResolve}`)",
+            "require.resolve(\"binary\" + \"-expression\")",
+            "require.resolve(\"binary\" + variableResolve)"
+          ]
+        }));
+      });
+
+      it("handles missing package.json:main and index.json", async () => {
+        mock({
+          "hi.js": `
+            require("one");
+            require("two");
+            require("three");
+          `,
+          node_modules: {
+            // `resolve()` can handle this straight up.
+            one: {
+              "package.json": stringify({
+                main: "index.json"
+              }),
+              "index.json": JSON.stringify([
+                "one",
+                "1"
+              ])
+            },
+            // `resolve()` **can't** handle this.
+            two: {
+              "package.json": stringify({
+              }),
+              "index.json": JSON.stringify([
+                "two",
+                "2"
+              ])
+            },
+            // `resolve()` can handle this straight up.
+            three: {
+              "package.json": stringify({
+              }),
+              "index.js": "module.exports = 'three';"
+            }
+          }
+        });
+
+        const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.json",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.json",
+          "node_modules/two/package.json"
+        ]));
+        expect(misses).to.eql({});
+      });
+
+      it("handles already declared identifier code", async () => {
+        mock({
+          "hi.js": `
+            var foo = foo;
+
+            function foo() { return "Wow, this is valid!"; }
+
+            require("one");
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'one';
+              `
+            }
+          }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({ srcPath });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json"
+        ]));
+
+        expect(missesMap({ misses })).to.be.eql({});
+      });
+    });
+
+    describe("modern ESM exports", () => {
+      it("TODO: ENUMERATE SCENARIOS"); // TODO: IMPLEMENT
     });
   });
 
