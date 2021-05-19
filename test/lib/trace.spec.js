@@ -1465,7 +1465,64 @@ describe("lib/trace", () => {
     });
 
     describe("modern ESM exports", () => {
-      it("TODO: ENUMERATE SCENARIOS"); // TODO: IMPLEMENT
+      // Scenario is loosely based on
+      // https://unpkg.com/browse/es-get-iterator@1.1.2/package.json
+      // Notably CJS does _different_ things in legacy vs modern CJS.
+      describe("complicated exports", () => {
+        beforeEach(() => {
+          mock({
+            "hi.js": `
+              const its = require("complicated");
+              const itsPkg = require("complicated/package");
+            `,
+            node_modules: {
+              complicated: {
+                "package.json": stringify({
+                  main: "main.js",
+                  exports: {
+                    ".": [
+                      {
+                        browser: "./browser.js",
+                        "import": "./import.mjs",
+                        "default": "./default.js"
+                      },
+                      "./fallback.js"
+                    ],
+                    "./package": "./package.json",
+                    "./package.json": "./package.json"
+                  }
+                }),
+                "main.js": "module.exports = 'main';",
+                "browser.js": "module.exports = 'browser';",
+                "import.js": "module.exports = 'import';",
+                "default.js": "module.exports = 'default';",
+                "fallback.js": "module.exports = 'fallback';"
+              }
+            }
+          });
+        });
+
+        // TODO: Consider a "default" mode test that uses underlying OS???
+
+        it("handles legacy CJS", async () => {
+          const { dependencies, misses } = await traceFile({
+            // TODO: ADD MODE FLAG
+            srcPath: "hi.js"
+          });
+
+          expect(dependencies).to.eql(fullPaths([
+            "node_modules/complicated/main.js",
+            "node_modules/complicated/package.json"
+          ]));
+          expect(misses).to.eql({});
+        });
+
+        it("handles modern CJS"); // TODO: IMPLEMENT
+
+        it("handles modern ESM"); // TODO: IMPLEMENT
+      });
+
+      it("TODO: ENUMERATE MORE SCENARIOS"); // TODO: IMPLEMENT
     });
   });
 
