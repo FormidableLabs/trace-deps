@@ -1,6 +1,11 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Feature: Add full support for modern Node.js ESM and `exports`. Adds `mode` parameter to `traceFile`/`traceFiles`.
+  [#49](https://github.com/FormidableLabs/trace-deps/issues/51)
+
 ## 0.3.9
 
 * Bug/Feature: Support relative paths from package name root in `allowMissing`.

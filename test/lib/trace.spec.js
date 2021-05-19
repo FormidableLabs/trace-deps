@@ -5,7 +5,7 @@
 const path = require("path");
 const mock = require("mock-fs");
 
-const { traceFile, traceFiles } = require("../../lib/trace");
+const { traceFile, traceFiles, MODES } = require("../../lib/trace");
 
 const INDENT = 2;
 const stringify = (val) => JSON.stringify(val, null, INDENT);
@@ -1506,8 +1506,8 @@ describe("lib/trace", () => {
 
         it("handles legacy CJS", async () => {
           const { dependencies, misses } = await traceFile({
-            // TODO: ADD MODE FLAG
-            srcPath: "hi.js"
+            srcPath: "hi.js",
+            mode: MODES.NODE_LEGACY_CJS
           });
 
           expect(dependencies).to.eql(fullPaths([
