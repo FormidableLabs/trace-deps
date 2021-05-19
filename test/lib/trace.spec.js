@@ -1471,9 +1471,29 @@ describe("lib/trace", () => {
       describe("complicated exports", () => {
         beforeEach(() => {
           mock({
-            "hi.js": `
+            "require.js": `
               const its = require("complicated");
               const itsPkg = require("complicated/package");
+            `,
+            "import.mjs": `
+              import its from "complicated";
+              import itsPkg from "complicated/package";
+            `,
+            "dynamic-import.js": `
+              (async () => {
+                let its = "Dynamic import unsupported";
+                try {
+                  its = await import("complicated");
+                } catch (e) {}
+              })();
+            `,
+            "dynamic-import.mjs": `
+              (async () => {
+                let its = "Dynamic import unsupported";
+                try {
+                  its = await import("complicated");
+                } catch (e) {}
+              })();
             `,
             node_modules: {
               complicated: {
@@ -1504,22 +1524,88 @@ describe("lib/trace", () => {
 
         // TODO: Consider a "default" mode test that uses underlying OS???
 
-        it("handles legacy CJS", async () => {
-          const { dependencies, misses } = await traceFile({
-            srcPath: "hi.js",
-            mode: MODES.NODE_LEGACY_CJS
+        describe("static imports", () => {
+          it("handles legacy CJS", async () => {
+            const { dependencies, misses } = await traceFile({
+              srcPath: "require.js",
+              mode: MODES.NODE_LEGACY_CJS
+            });
+
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/complicated/main.js",
+              "node_modules/complicated/package.json"
+            ]));
+            expect(misses).to.eql({});
           });
 
-          expect(dependencies).to.eql(fullPaths([
-            "node_modules/complicated/main.js",
-            "node_modules/complicated/package.json"
-          ]));
-          expect(misses).to.eql({});
+          it("handles modern CJS", async () => {
+            const { dependencies, misses } = await traceFile({
+              srcPath: "require.js",
+              mode: MODES.NODE_MODERN_CJS
+            });
+
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/complicated/default.js",
+              "node_modules/complicated/package.json"
+            ]));
+            expect(misses).to.eql({});
+          });
+
+          it("handles modern ESM", async () => {
+            const { dependencies, misses } = await traceFile({
+              srcPath: "import.mjs",
+              mode: MODES.NODE_ESM
+            });
+
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/complicated/import.mjs",
+              "node_modules/complicated/package.json"
+            ]));
+            expect(misses).to.eql({});
+          });
         });
 
-        it("handles modern CJS"); // TODO: IMPLEMENT
+        describe("dynamic imports", () => {
+          it("handles legacy CJS", async () => {
+            const { dependencies, misses } = await traceFile({
+              srcPath: "dynamic-import.js",
+              mode: MODES.NODE_LEGACY_CJS
+            });
 
-        it("handles modern ESM"); // TODO: IMPLEMENT
+            // TODO: For Node.js, this is a miss with no import.
+            // Figure out what we should do here.
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/complicated/package.json"
+            ]));
+            expect(misses).to.eql({});
+          });
+
+          it("handles modern CJS", async () => {
+            const { dependencies, misses } = await traceFile({
+              srcPath: "dynamic-import.js",
+              mode: MODES.NODE_MODERN_CJS
+            });
+
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/complicated/import.mjs",
+              "node_modules/complicated/package.json"
+            ]));
+            expect(misses).to.eql({});
+          });
+
+          it("handles modern ESM", async () => {
+            const { dependencies, misses } = await traceFile({
+              srcPath: "dynamic-import.mjs",
+              mode: MODES.NODE_ESM
+            });
+
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/complicated/import.mjs",
+              "node_modules/complicated/package.json"
+            ]));
+            expect(misses).to.eql({});
+          });
+        });
       });
 
       it("TODO: ENUMERATE MORE SCENARIOS"); // TODO: IMPLEMENT
