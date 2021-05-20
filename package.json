@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "acorn-node": "^2.0.1",
-    "resolve": "^1.20.0"
+    "resolve": "^1.20.0",
+    "resolve.exports": "^1.0.2"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",

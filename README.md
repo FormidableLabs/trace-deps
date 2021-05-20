@@ -112,6 +112,7 @@ Examples:
 * TODO: ADD NOTE ABOUT MODERN ESM
     * TODO: Note the complexity of how a mix of CJS + ESM things can come in
     * TODO: Note that `--conditions=` makes this even worse.
+    * TODO: Add note about conditions we infer off of.
     * TODO: Thus, our approach is to trade off some extra packaging size to ensure correctness.
     * TODO: Note that inclusions from `package.json:exports` are over-inclusive by design.
 
