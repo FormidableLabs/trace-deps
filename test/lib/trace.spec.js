@@ -1469,119 +1469,112 @@ describe("lib/trace", () => {
       // https://unpkg.com/browse/es-get-iterator@1.1.2/package.json
       // Notably CJS does _different_ things in legacy vs modern CJS.
       describe("complicated exports", () => {
-        beforeEach(() => {
-          mock({
-            "require.js": `
-              const its = require("complicated");
-              const itsPkg = require("complicated/package");
-            `,
-            "import.mjs": `
-              import its from "complicated";
-              import itsPkg from "complicated/package";
-            `,
-            "dynamic-import.js": `
-              (async () => {
-                let its = "Dynamic import unsupported";
-                try {
-                  its = await import("complicated");
-                } catch (e) {}
-              })();
-            `,
-            "dynamic-import.mjs": `
-              (async () => {
-                let its = "Dynamic import unsupported";
-                try {
-                  its = await import("complicated");
-                } catch (e) {}
-              })();
-            `,
-            node_modules: {
-              complicated: {
-                "package.json": stringify({
-                  name: "complicated",
-                  main: "main.js",
-                  // TODO: Add a subpath to this scenario and new describe block
-                  exports: {
-                    ".": [
-                      {
-                        browser: "./browser.js",
-                        development: "./development.js",
-                        production: "./production.mjs",
-                        "import": "./import.mjs",
-                        "default": "./default.js"
-                      },
-                      "./fallback.js"
-                    ],
-                    "./package": "./package.json",
-                    "./package.json": "./package.json"
-                  }
-                }),
-                "main.js": "module.exports = 'main';",
-                "browser.js": "module.exports = 'browser';",
-                "development.js": "module.exports = 'development';",
-                "production.mjs": "const msg = 'production'; export default msg;",
-                "import.mjs": "const msg = 'import'; export default msg;",
-                "default.js": "module.exports = 'default';",
-                "fallback.js": "module.exports = 'fallback';"
-              }
+        const createMock = ({ pkg } = {}) => mock({
+          "require.js": `
+            const its = require("complicated");
+            const itsPkg = require("complicated/package");
+          `,
+          "import.mjs": `
+            import its from "complicated";
+            import itsPkg from "complicated/package";
+          `,
+          "dynamic-import.js": `
+            (async () => {
+              let its = "Dynamic import unsupported";
+              try {
+                its = await import("complicated");
+              } catch (e) {}
+            })();
+          `,
+          "dynamic-import.mjs": `
+            (async () => {
+              let its = "Dynamic import unsupported";
+              try {
+                its = await import("complicated");
+              } catch (e) {}
+            })();
+          `,
+          node_modules: {
+            complicated: {
+              "package.json": stringify({
+                name: "complicated",
+                main: "main.js",
+                ...pkg
+              }),
+              "main.js": "module.exports = 'main';",
+              "browser.js": "module.exports = 'browser';",
+              "development.js": "module.exports = 'development';",
+              "production.mjs": "const msg = 'production'; export default msg;",
+              "import.mjs": "const msg = 'import'; export default msg;",
+              "default.js": "module.exports = 'default';",
+              "fallback.js": "module.exports = 'fallback';"
             }
+          }
+        });
+
+        describe("no exports", () => {
+          beforeEach(() => {
+            createMock();
+          });
+
+          [
+            ["CJS static", "require.js"],
+            ["ESM static", "import.mjs"],
+            ["CJS dynamic", "dynamic-import.js"],
+            ["ESM dynamic", "dynamic-import.mjs"]
+          ].forEach(([name, srcPath]) => {
+            it(`handles ${name} imports`, async () => {
+              const { dependencies, misses } = await traceFile({ srcPath });
+
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/main.js",
+                "node_modules/complicated/package.json"
+              ]));
+              expect(misses).to.eql({});
+            });
           });
         });
 
         describe("static imports", () => {
-          it("handles CJS", async () => {
+          beforeEach(() => {
+            createMock({
+              pkg: {
+                exports: {
+                  ".": [
+                    {
+                      browser: "./browser.js",
+                      development: "./development.js",
+                      production: "./production.mjs",
+                      "import": "./import.mjs",
+                      "default": "./default.js"
+                    },
+                    "./fallback.js"
+                  ],
+                  "./package": "./package.json",
+                  "./package.json": "./package.json"
+                }
+              }
+            });
+          });
+
+          // TODO: HERE
+          it.skip("handles CJS static imports", async () => {
             const { dependencies, misses } = await traceFile({
               srcPath: "require.js"
             });
 
             expect(dependencies).to.eql(fullPaths([
-              "node_modules/complicated/main.js",
-              "node_modules/complicated/package.json"
             ]));
             expect(misses).to.eql({});
           });
 
-          it.skip("handles ESM", async () => { // TODO: FINISH
-            const { dependencies, misses } = await traceFile({
-              srcPath: "import.mjs"
-            });
-
-            expect(dependencies).to.eql(fullPaths([
-              "node_modules/complicated/import.mjs",
-              "node_modules/complicated/package.json"
-            ]));
-            expect(misses).to.eql({});
-          });
-        });
-
-        describe("dynamic imports", () => {
-          it.skip("handles CJS", async () => { // TODO: FINISH
-            const { dependencies, misses } = await traceFile({
-              srcPath: "dynamic-import.js"
-            });
-
-            // TODO: For Node.js, this is a miss with no import.
-            // Figure out what we should do here.
-            expect(dependencies).to.eql(fullPaths([
-              "node_modules/complicated/package.json"
-            ]));
-            expect(misses).to.eql({});
-          });
-
-          it.skip("handles ESM", async () => { // TODO: FINISH
-            const { dependencies, misses } = await traceFile({
-              srcPath: "dynamic-import.mjs"
-            });
-
-            expect(dependencies).to.eql(fullPaths([
-              "node_modules/complicated/import.mjs",
-              "node_modules/complicated/package.json"
-            ]));
-            expect(misses).to.eql({});
-          });
+          it.skip("handles CJS dynamic imports"); // TODO: IMPLEMENT
+          it.skip("handles ESM static imports"); // TODO: IMPLEMENT
+          it.skip("handles ESM dynamic imports"); // TODO: IMPLEMENT
         });
       });
 
+      it("TODO: Add subpath scenarios"); // TODO: IMPLEMENT
       it("TODO: ENUMERATE MORE SCENARIOS"); // TODO: IMPLEMENT
     });
   });
