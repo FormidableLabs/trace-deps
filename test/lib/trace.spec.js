@@ -1498,12 +1498,15 @@ describe("lib/trace", () => {
             node_modules: {
               complicated: {
                 "package.json": stringify({
+                  name: "complicated",
                   main: "main.js",
                   // TODO: Add a subpath to this scenario and new describe block
                   exports: {
                     ".": [
                       {
                         browser: "./browser.js",
+                        development: "./development.js",
+                        production: "./production.mjs",
                         "import": "./import.mjs",
                         "default": "./default.js"
                       },
@@ -1515,7 +1518,9 @@ describe("lib/trace", () => {
                 }),
                 "main.js": "module.exports = 'main';",
                 "browser.js": "module.exports = 'browser';",
-                "import.js": "module.exports = 'import';",
+                "development.js": "module.exports = 'development';",
+                "production.mjs": "const msg = 'production'; export default msg;",
+                "import.mjs": "const msg = 'import'; export default msg;",
                 "default.js": "module.exports = 'default';",
                 "fallback.js": "module.exports = 'fallback';"
               }
