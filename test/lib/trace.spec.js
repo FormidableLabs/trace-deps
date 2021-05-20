@@ -5,7 +5,7 @@
 const path = require("path");
 const mock = require("mock-fs");
 
-const { traceFile, traceFiles, MODES } = require("../../lib/trace");
+const { traceFile, traceFiles } = require("../../lib/trace");
 
 const INDENT = 2;
 const stringify = (val) => JSON.stringify(val, null, INDENT);
@@ -1499,6 +1499,7 @@ describe("lib/trace", () => {
               complicated: {
                 "package.json": stringify({
                   main: "main.js",
+                  // TODO: Add a subpath to this scenario and new describe block
                   exports: {
                     ".": [
                       {
@@ -1522,13 +1523,10 @@ describe("lib/trace", () => {
           });
         });
 
-        // TODO: Consider a "default" mode test that uses underlying OS???
-
         describe("static imports", () => {
-          it("handles legacy CJS", async () => {
+          it("handles CJS", async () => {
             const { dependencies, misses } = await traceFile({
-              srcPath: "require.js",
-              mode: MODES.NODE_LEGACY_CJS
+              srcPath: "require.js"
             });
 
             expect(dependencies).to.eql(fullPaths([
@@ -1538,23 +1536,9 @@ describe("lib/trace", () => {
             expect(misses).to.eql({});
           });
 
-          it("handles modern CJS", async () => {
+          it.skip("handles ESM", async () => { // TODO: FINISH
             const { dependencies, misses } = await traceFile({
-              srcPath: "require.js",
-              mode: MODES.NODE_MODERN_CJS
-            });
-
-            expect(dependencies).to.eql(fullPaths([
-              "node_modules/complicated/default.js",
-              "node_modules/complicated/package.json"
-            ]));
-            expect(misses).to.eql({});
-          });
-
-          it("handles modern ESM", async () => {
-            const { dependencies, misses } = await traceFile({
-              srcPath: "import.mjs",
-              mode: MODES.NODE_ESM
+              srcPath: "import.mjs"
             });
 
             expect(dependencies).to.eql(fullPaths([
@@ -1566,10 +1550,9 @@ describe("lib/trace", () => {
         });
 
         describe("dynamic imports", () => {
-          it("handles legacy CJS", async () => {
+          it.skip("handles CJS", async () => { // TODO: FINISH
             const { dependencies, misses } = await traceFile({
-              srcPath: "dynamic-import.js",
-              mode: MODES.NODE_LEGACY_CJS
+              srcPath: "dynamic-import.js"
             });
 
             // TODO: For Node.js, this is a miss with no import.
@@ -1580,23 +1563,9 @@ describe("lib/trace", () => {
             expect(misses).to.eql({});
           });
 
-          it("handles modern CJS", async () => {
+          it.skip("handles ESM", async () => { // TODO: FINISH
             const { dependencies, misses } = await traceFile({
-              srcPath: "dynamic-import.js",
-              mode: MODES.NODE_MODERN_CJS
-            });
-
-            expect(dependencies).to.eql(fullPaths([
-              "node_modules/complicated/import.mjs",
-              "node_modules/complicated/package.json"
-            ]));
-            expect(misses).to.eql({});
-          });
-
-          it("handles modern ESM", async () => {
-            const { dependencies, misses } = await traceFile({
-              srcPath: "dynamic-import.mjs",
-              mode: MODES.NODE_ESM
+              srcPath: "dynamic-import.mjs"
             });
 
             expect(dependencies).to.eql(fullPaths([

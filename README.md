@@ -26,13 +26,6 @@ Trace and return on-disk locations of all file dependencies from a source file.
 _Parameters_:
 
 * `srcPath` (`string`): source file path to trace
-* `mode` (`string`): Node.js import mode to use for tracing.
-    * The presently active versions of Node.js (v12+) include support for [ECMAScript module imports](https://nodejs.org/api/esm.html) and an updated `package.json` [scheme](https://nodejs.org/api/packages.html) that allows modules to declare a complicated array of `exports`. Making things even more challenging is that various `exports` sub-features have been implemented in different versions of Node.js v12.
-    * The practical upshot is that users need to make sure that their ultimate production Node.js runtime version has set `trace-deps` into the appropriate mode to package the correct dependencies used at runtime.
-    * `trace-deps` simplifies the tracing scenarios to the following:
-        * `NODE_LEGACY_CJS`: Legacy CommonJS `require`s read off `package.json:main` like in all of Node.js v10 and earlier.
-        * `NODE_MODERN_CJS`: Modern CommonJS `require`s which will infer paths off `package.json:exports` before looking to `package.json:main`.
-        * `NODE_ESM`: Modern ESM `import`s which will infer paths off `package.json:exports`.
 * `ignores` (`Array<string>`): list of package prefixes to ignore tracing entirely
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of (1) absolute source file paths and (2) package name or relative file path keys to permitted missing module prefixes values.
     * Source file keys must match the entire file path (e.g., `/FULL/PATH/TO/entry.js`) while package keys are the start of package name either alone or with the rest of the relative path to ultimate file (e.g., `lodash`, `@scope/pkg` or `@scope/pkg/some/path/to/file.js`).
@@ -76,7 +69,6 @@ Trace and return on-disk locations of all file dependencies from source files.
 _Parameters_:
 
 * `srcPaths` (`Array<string>`): source file paths to trace
-* `mode` (`string`): Node.js import mode to use for tracing.
 * `ignores` (`Array<string>`): list of package prefixes to ignore
 * `allowMissing` (`Object.<string, Array<string>`): Mapping of source file paths and package names/paths to permitted missing module prefixes.
 * `bailOnMissing` (`boolean`): Throw error if missing static import.
@@ -116,6 +108,12 @@ Examples:
 * **Only parses Node.js JavaScript**: `trace-deps` presently will only Node.js-compatible JavaScript in CommonJS or ESM formats. It will not correctly parse things like TypeScript, JSX, ReasonML, non-JavaScript, etc.
 
 * **Only handles single string dependencies**: `require`, `require.resolve`, and dynamic `import()` support calls with variables or other expressions like `require(aVar)`, `import(process.env.VAL + "more-stuff")`. This library presently only supports calls with a **single string** and nothing else. We have a [tracking ticket](https://github.com/FormidableLabs/trace-deps/issues/2) to consider expanding support for things like partial evaluation.
+
+* TODO: ADD NOTE ABOUT MODERN ESM
+    * TODO: Note the complexity of how a mix of CJS + ESM things can come in
+    * TODO: Note that `--conditions=` makes this even worse.
+    * TODO: Thus, our approach is to trade off some extra packaging size to ensure correctness.
+    * TODO: Note that inclusions from `package.json:exports` are over-inclusive by design.
 
 * **Includes `package.json` files used in resolution**: As this is a Node.js-focused library, to follow the Node.js [module resolution algorithm](https://nodejs.org/api/modules.html#modules_all_together) which notably uses intermediate encountered `package.json` files to determine how to resolve modules. This means that we include a lot of `package.json` files that seemingly aren't directly imported (such as a `const pkg = require("mod/package.json")`) because they are needed for the list of all traced files to together resolve correctly if all on disk together.
 
