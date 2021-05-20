@@ -1535,7 +1535,7 @@ describe("lib/trace", () => {
           });
         });
 
-        describe("static imports", () => {
+        describe("no require export", () => {
           beforeEach(() => {
             createMock({
               pkg: {
@@ -1557,23 +1557,30 @@ describe("lib/trace", () => {
             });
           });
 
-          // TODO: HERE
-          it.skip("handles CJS static imports", async () => {
-            const { dependencies, misses } = await traceFile({
-              srcPath: "require.js"
+          [
+            ["CJS static", "require.js"],
+            ["ESM static", "import.mjs"],
+            ["CJS dynamic", "dynamic-import.js"],
+            ["ESM dynamic", "dynamic-import.mjs"]
+          ].forEach(([name, srcPath, deps]) => {
+            it(`handles ${name} imports`, async () => {
+              const { dependencies, misses } = await traceFile({ srcPath });
+
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/default.js",
+                "node_modules/complicated/development.js",
+                "node_modules/complicated/import.mjs",
+                "node_modules/complicated/main.js",
+                "node_modules/complicated/package.json",
+                "node_modules/complicated/production.mjs"
+              ]));
+              expect(misses).to.eql({});
             });
-
-            expect(dependencies).to.eql(fullPaths([
-            ]));
-            expect(misses).to.eql({});
           });
-
-          it.skip("handles CJS dynamic imports"); // TODO: IMPLEMENT
-          it.skip("handles ESM static imports"); // TODO: IMPLEMENT
-          it.skip("handles ESM dynamic imports"); // TODO: IMPLEMENT
         });
       });
 
+      it("TODO: no import export"); // TODO: IMPLEMENT
       it("TODO: Add subpath scenarios"); // TODO: IMPLEMENT
       it("TODO: ENUMERATE MORE SCENARIOS"); // TODO: IMPLEMENT
     });
