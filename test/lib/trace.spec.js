@@ -1507,7 +1507,17 @@ describe("lib/trace", () => {
               "production.mjs": "const msg = 'production'; export default msg;",
               "import.mjs": "const msg = 'import'; export default msg;",
               "default.js": "module.exports = 'default';",
-              "fallback.js": "module.exports = 'fallback';"
+              "fallback.js": "module.exports = 'fallback';",
+              sub1: {
+                "index.cjs": "module.exports = 'sub1/index.cjs';",
+                "index.mjs": "const msg = 'sub1/index.mjs'; export default msg;",
+              },
+              sub2: {
+                "index.cjs": "module.exports = 'sub2/index.cjs';",
+                "index.mjs": "const msg = 'sub2/index.mjs'; export default msg;",
+                "another.cjs": "module.exports = 'sub2/another.cjs';",
+                "another.mjs": "const msg = 'sub2/another.mjs'; export default msg;",
+              }
             }
           }
         });
@@ -1577,6 +1587,16 @@ describe("lib/trace", () => {
               expect(misses).to.eql({});
             });
           });
+        });
+
+        describe("no require export", () => {
+          it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
+        });
+
+        describe("subpaths", () => {
+          // TODO: `sub1/PATH`
+          // TODO: `sub2/*.js` wildcard export format.
+          it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
         });
       });
 
