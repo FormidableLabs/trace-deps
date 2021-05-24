@@ -1496,6 +1496,12 @@ describe("lib/trace", () => {
             import its from "complicated";
             import itsPkg from "complicated/package";
             import fs from "fs"; // core package
+
+            // TOOD: Create a new file with this to do subpaths.
+            // TODO: HERE -- The first subpath currently fails because of 'resolve' not
+            // getting to the package exports level.
+            // TODO: FAILS import 'subdep/from-import';
+            // TODO: WORKS import 'subdep/from-import.mjs';
           `,
           "dynamic-import.js": `
             (async () => {
@@ -1525,6 +1531,7 @@ describe("lib/trace", () => {
               "development.js": "module.exports = 'development';",
               "production.mjs": "const msg = 'production'; export default msg;",
               "import.mjs": "import 'subdep'; const msg = 'import'; export default msg;",
+              "require.js": "require('subdep/from-require'); module.exports = 'require';",
               "default.js": "require('subdep/from-default'); module.exports = 'default';",
               "fallback.js": "module.exports = 'fallback';",
               sub1: {
@@ -1547,6 +1554,7 @@ describe("lib/trace", () => {
                     "import": "./import.mjs",
                     "default": "./default.js"
                   },
+                  "./from-import": "./from-import.mjs",
                   "./package.json": "./package.json"
                 }
               }),
@@ -1554,6 +1562,8 @@ describe("lib/trace", () => {
               "import.mjs": "const msg = 'import'; export default msg;",
               "default.js": "module.exports = 'default';",
               "from-main.js": "module.exports = 'from-main';",
+              "from-import.mjs": "const msg = 'from import'; export default msg;",
+              "from-require.js": "module.exports = 'from-require';",
               "from-default.js": "module.exports = 'from-default';"
             }
           }
@@ -1636,7 +1646,53 @@ describe("lib/trace", () => {
         });
 
         describe("no import export", () => {
-          it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
+          beforeEach(() => {
+            createMock({
+              pkg: {
+                exports: {
+                  ".": [
+                    {
+                      browser: "./browser.js",
+                      development: "./development.js",
+                      production: "./production.mjs",
+                      require: "./require.js",
+                      "default": "./default.js"
+                    },
+                    "./fallback.js"
+                  ],
+                  "./package": "./package.json",
+                  "./package.json": "./package.json"
+                }
+              }
+            });
+          });
+
+          [
+            ["CJS static", "require.js"],
+            ["ESM static", "import.mjs"],
+            ["CJS dynamic", "dynamic-import.js"],
+            ["ESM dynamic", "dynamic-import.mjs"]
+          ].forEach(([name, srcPath]) => {
+            it(`handles ${name} imports`, async () => {
+              const { dependencies, misses } = await traceFile({ srcPath });
+
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/default.js",
+                "node_modules/complicated/development.js",
+                "node_modules/complicated/main.js",
+                "node_modules/complicated/package.json",
+                "node_modules/complicated/production.mjs",
+                "node_modules/complicated/require.js",
+                // Note: All of the import paths are to sub-paths, and **not**
+                // the root package, so no defaults in play.
+                "node_modules/subdep/from-default.js",
+                "node_modules/subdep/from-main.js",
+                "node_modules/subdep/from-require.js",
+                "node_modules/subdep/package.json"
+              ]));
+              expect(misses).to.eql({});
+            });
+          });
         });
 
         describe("subpaths", () => {
