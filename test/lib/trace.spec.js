@@ -1520,12 +1520,12 @@ describe("lib/trace", () => {
                 main: "main.js",
                 ...pkg
               }),
-              "main.js": "module.exports = 'main';",
+              "main.js": "require('subdep/from-main'); module.exports = 'main';",
               "browser.js": "module.exports = 'browser';",
               "development.js": "module.exports = 'development';",
               "production.mjs": "const msg = 'production'; export default msg;",
-              "import.mjs": "const msg = 'import'; export default msg;",
-              "default.js": "module.exports = 'default';",
+              "import.mjs": "import 'subdep'; const msg = 'import'; export default msg;",
+              "default.js": "require('subdep/from-default'); module.exports = 'default';",
               "fallback.js": "module.exports = 'fallback';",
               sub1: {
                 "index.cjs": "module.exports = 'sub1/index.cjs';",
@@ -1537,6 +1537,24 @@ describe("lib/trace", () => {
                 "another.cjs": "module.exports = 'sub2/another.cjs';",
                 "another.mjs": "const msg = 'sub2/another.mjs'; export default msg;"
               }
+            },
+            subdep: {
+              "package.json": stringify({
+                name: "subdep",
+                main: "main.js",
+                exports: {
+                  ".": {
+                    "import": "./import.mjs",
+                    "default": "./default.js"
+                  },
+                  "./package.json": "./package.json"
+                }
+              }),
+              "main.js": "module.exports = 'main';",
+              "import.mjs": "const msg = 'import'; export default msg;",
+              "default.js": "module.exports = 'default';",
+              "from-main.js": "module.exports = 'from-main';",
+              "from-default.js": "module.exports = 'from-default';"
             }
           }
         });
@@ -1557,7 +1575,9 @@ describe("lib/trace", () => {
 
               expect(dependencies).to.eql(fullPaths([
                 "node_modules/complicated/main.js",
-                "node_modules/complicated/package.json"
+                "node_modules/complicated/package.json",
+                "node_modules/subdep/from-main.js",
+                "node_modules/subdep/package.json"
               ]));
               expect(misses).to.eql({});
             });
@@ -1601,7 +1621,14 @@ describe("lib/trace", () => {
                 "node_modules/complicated/import.mjs",
                 "node_modules/complicated/main.js",
                 "node_modules/complicated/package.json",
-                "node_modules/complicated/production.mjs"
+                "node_modules/complicated/production.mjs",
+                "node_modules/subdep/default.js",
+                "node_modules/subdep/from-default.js",
+                "node_modules/subdep/from-main.js",
+                "node_modules/subdep/import.mjs",
+                "node_modules/subdep/main.js",
+                "node_modules/subdep/package.json"
+
               ]));
               expect(misses).to.eql({});
             });
