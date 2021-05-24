@@ -1591,7 +1591,7 @@ describe("lib/trace", () => {
             ["ESM static", "import.mjs"],
             ["CJS dynamic", "dynamic-import.js"],
             ["ESM dynamic", "dynamic-import.mjs"]
-          ].forEach(([name, srcPath, deps]) => {
+          ].forEach(([name, srcPath]) => {
             it(`handles ${name} imports`, async () => {
               const { dependencies, misses } = await traceFile({ srcPath });
 
