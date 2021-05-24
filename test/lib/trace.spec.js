@@ -76,6 +76,24 @@ describe("lib/trace", () => {
         );
       });
 
+      it("throws on dependency with missing file", async () => {
+        mock({
+          "hi.js": "require('missing-file');",
+          node_modules: {
+            "missing-file": {
+              "package.json": stringify({
+                main: "file-doesnt-exist.js"
+              })
+            }
+          }
+        });
+
+        await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
+          "Encountered resolution error in hi.js for missing-file: "
+          + "Error: Cannot find module 'missing-file' from '.'"
+        );
+      });
+
       it("throws on nonexistent extra dependency", async () => {
         mock({
           "hi.js": "module.exports = require('./ho');",
@@ -1464,8 +1482,7 @@ describe("lib/trace", () => {
       });
     });
 
-    // TODO: RE-ENABLE!!!
-    describe.skip("modern ESM exports", () => {
+    describe("modern ESM exports", () => {
       // Scenario is loosely based on
       // https://unpkg.com/browse/es-get-iterator@1.1.2/package.json
       // Notably CJS does _different_ things in legacy vs modern CJS.
@@ -1478,6 +1495,7 @@ describe("lib/trace", () => {
           "import.mjs": `
             import its from "complicated";
             import itsPkg from "complicated/package";
+            import fs from "fs"; // core package
           `,
           "dynamic-import.js": `
             (async () => {
@@ -1590,7 +1608,7 @@ describe("lib/trace", () => {
           });
         });
 
-        describe("no require export", () => {
+        describe("no import export", () => {
           it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
         });
 
@@ -1604,10 +1622,13 @@ describe("lib/trace", () => {
           // TODO: Tyler's problem.
           it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
         });
+
+        describe("throws on missing specified export source", () => {
+          // TODO: Valid export configuration, just the file doesn't exist
+          it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
+        });
       });
 
-      it("TODO: no import export"); // TODO: IMPLEMENT
-      it("TODO: Add subpath scenarios"); // TODO: IMPLEMENT
       it("TODO: ENUMERATE MORE SCENARIOS"); // TODO: IMPLEMENT
     });
   });
