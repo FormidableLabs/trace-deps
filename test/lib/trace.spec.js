@@ -1487,7 +1487,7 @@ describe("lib/trace", () => {
       // https://unpkg.com/browse/es-get-iterator@1.1.2/package.json
       // Notably CJS does _different_ things in legacy vs modern CJS.
       describe("complicated exports", () => {
-        const createMock = ({ pkg } = {}) => mock({
+        const createMock = ({ pkg, pkgFn = (p) => p } = {}) => mock({
           "require.js": `
             const its = require("complicated");
             const itsPkg = require("complicated/package");
@@ -1521,11 +1521,11 @@ describe("lib/trace", () => {
           `,
           node_modules: {
             complicated: {
-              "package.json": stringify({
+              "package.json": stringify(pkgFn({
                 name: "complicated",
                 main: "main.js",
                 ...pkg
-              }),
+              })),
               "main.js": "require('subdep/from-main'); module.exports = 'main';",
               "browser.js": "module.exports = 'browser';",
               "development.js": "module.exports = 'development';",
@@ -1701,9 +1701,58 @@ describe("lib/trace", () => {
           it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
         });
 
+        // Some modern ESM packages lack a `main` field.
         describe("no main field", () => {
-          // TODO: Tyler's problem.
-          it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
+          beforeEach(() => {
+            createMock({
+              pkg: {
+                exports: {
+                  ".": [
+                    {
+                      browser: "./browser.js",
+                      development: "./development.js",
+                      production: "./production.mjs",
+                      require: "./require.js",
+                      "import": "./import.mjs",
+                      "default": "./default.js"
+                    },
+                    "./fallback.js"
+                  ],
+                  "./package": "./package.json",
+                  "./package.json": "./package.json"
+                }
+              },
+              pkgFn: (pkg) => {
+                delete pkg.main;
+                return pkg;
+              }
+            });
+          });
+
+          [
+            ["CJS static", "require.js"],
+            ["ESM static", "import.mjs"],
+            ["CJS dynamic", "dynamic-import.js"],
+            ["ESM dynamic", "dynamic-import.mjs"]
+          ].forEach(([name, srcPath]) => {
+            it(`handles ${name} imports`, async () => {
+              const { dependencies, misses } = await traceFile({ srcPath });
+
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/development.js",
+                "node_modules/complicated/import.mjs",
+                "node_modules/complicated/package.json",
+                "node_modules/complicated/production.mjs",
+                "node_modules/complicated/require.js",
+                "node_modules/subdep/default.js",
+                "node_modules/subdep/from-require.js",
+                "node_modules/subdep/import.mjs",
+                "node_modules/subdep/main.js",
+                "node_modules/subdep/package.json"
+              ]));
+              expect(misses).to.eql({});
+            });
+          });
         });
 
         describe("throws on missing specified export source", () => {
