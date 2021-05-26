@@ -1487,7 +1487,7 @@ describe("lib/trace", () => {
       // https://unpkg.com/browse/es-get-iterator@1.1.2/package.json
       // Notably CJS does _different_ things in legacy vs modern CJS.
       describe("complicated exports", () => {
-        const createMock = ({ pkg, pkgFn = (p) => p } = {}) => mock({
+        const createMock = ({ pkg, pkgFn = (p) => p, srcs } = {}) => mock({
           "require.js": `
             const its = require("complicated");
             const itsPkg = require("complicated/package");
@@ -1496,12 +1496,6 @@ describe("lib/trace", () => {
             import its from "complicated";
             import itsPkg from "complicated/package";
             import fs from "fs"; // core package
-
-            // TOOD: Create a new file with this to do subpaths.
-            // TODO: HERE -- The first subpath currently fails because of 'resolve' not
-            // getting to the package exports level.
-            // TODO: FAILS import 'subdep/from-import';
-            // TODO: WORKS import 'subdep/from-import.mjs';
           `,
           "dynamic-import.js": `
             (async () => {
@@ -1519,6 +1513,7 @@ describe("lib/trace", () => {
               } catch (e) {}
             })();
           `,
+          ...srcs,
           node_modules: {
             complicated: {
               "package.json": stringify(pkgFn({
@@ -1535,6 +1530,7 @@ describe("lib/trace", () => {
               "default.js": "require('subdep/from-default'); module.exports = 'default';",
               "fallback.js": "module.exports = 'fallback';",
               sub1: {
+                "index.js": "module.exports = 'sub1/index.js';",
                 "index.cjs": "module.exports = 'sub1/index.cjs';",
                 "index.mjs": "const msg = 'sub1/index.mjs'; export default msg;"
               },
@@ -1695,13 +1691,86 @@ describe("lib/trace", () => {
           });
         });
 
+        // TODO: `sub1/PATH`
+        // TODO: `sub2/*.js` wildcard export format.
+        //
+        // TOOD: Create a new file with this to do subpaths.
+        // TODO: HERE -- The first subpath currently fails because of 'resolve' not
+        // getting to the package exports level.
+        // TODO: FAILS import 'subdep/from-import';
+        // TODO: WORKS import 'subdep/from-import.mjs';
         describe("subpaths", () => {
-          // TODO: `sub1/PATH`
-          // TODO: `sub2/*.js` wildcard export format.
-          it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
+          beforeEach(() => {
+            createMock({
+              pkg: {
+                exports: {
+                  ".": [
+                    {
+                      "default": "./default.js"
+                    }
+                  ],
+                  "./package": "./package.json",
+                  "./package.json": "./package.json",
+                  "./sub1": {
+                    require: "./sub1/index.cjs",
+                    import: "./sub1/index.mjs"
+                  }
+                  // TODO: FOR SUB2
+                  // "./sub1/*": {
+                  //   require: "./sub1/*.cjs",
+                  //   import: "./sub1/*.mjs"
+                  // }
+                }
+              },
+              srcs: {
+                "require-subpath.js": `
+                  require("complicated/sub1");
+                `,
+                "import-subpath.mjs": `
+                  import "complicated/sub1";
+                `,
+                "dynamic-import-subpath.js": `
+                  (async () => {
+                    let sub1 = "Dynamic import unsupported";
+                    try {
+                      sub1 = await import("complicated/sub1");
+                    } catch (e) {}
+                  })();
+                `,
+                "dynamic-import-subpath.mjs": `
+                  (async () => {
+                    let sub1 = "Dynamic import unsupported";
+                    try {
+                      sub1 = await import("complicated/sub1");
+                    } catch (e) {}
+                  })();
+                `
+              }
+            });
+          });
+
+          [
+            ["CJS static", "require-subpath.js"],
+            ["ESM static", "import-subpath.mjs"],
+            ["CJS dynamic", "dynamic-import-subpath.js"],
+            ["ESM dynamic", "dynamic-import-subpath.mjs"]
+          ].forEach(([name, srcPath]) => {
+            it(`handles ${name} imports`, async () => {
+              const { dependencies, misses } = await traceFile({ srcPath });
+
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/package.json",
+                "node_modules/complicated/sub1/index.cjs",
+                "node_modules/complicated/sub1/index.js",
+                "node_modules/complicated/sub1/index.mjs"
+              ]));
+              expect(misses).to.eql({});
+            });
+          });
         });
 
         // Some modern ESM packages lack a `main` field.
+        // See, e.g. https://unpkg.com/browse/jose-node-cjs-runtime@3.12.2/package.json
         describe("no main field", () => {
           beforeEach(() => {
             createMock({
