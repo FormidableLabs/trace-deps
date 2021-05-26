@@ -109,12 +109,10 @@ Examples:
 
 * **Only handles single string dependencies**: `require`, `require.resolve`, and dynamic `import()` support calls with variables or other expressions like `require(aVar)`, `import(process.env.VAL + "more-stuff")`. This library presently only supports calls with a **single string** and nothing else. We have a [tracking ticket](https://github.com/FormidableLabs/trace-deps/issues/2) to consider expanding support for things like partial evaluation.
 
-* TODO: ADD NOTE ABOUT MODERN ESM
-    * TODO: Note the complexity of how a mix of CJS + ESM things can come in
-    * TODO: Note that `--conditions=` makes this even worse.
-    * TODO: Add note about conditions we infer off of.
-    * TODO: Thus, our approach is to trade off some extra packaging size to ensure correctness.
-    * TODO: Note that inclusions from `package.json:exports` are over-inclusive by design.
+* **Modern Node.js ESM / `package.json:exports` Support**: Node.js v12 and newer now support modern ESM, and `trace-deps` will correctly package your application in any Node.js runtime. Unfortunately, the implementation of how to [resolve an ESM import](https://nodejs.org/api/packages.html) in modern Node.js is quite complex.
+    * **It's complicated**: For example, for the same import of `my-pkg`, a `require("my-pkg")` call in Node.js v10 might match a file specified in `package.json:main`, while `require("my-pkg")` in Node.js v12 might match a second file specified in `package.json:exports:".":require`, and `import "my-pkg"` in Node,js v12 might match a _third_ file specified in `package.json:exports:".":import`. Then, throw in [conditions](https://nodejs.org/api/packages.html#packages_conditional_exports), [subpaths](https://nodejs.org/api/packages.html#packages_subpath_exports), and even subpath conditions, and it becomes exceedingly difficult to statically analyze what is actually going to be imported at runtime by Node.js ahead of time, which is what `trace-deps` needs to do. 🤯
+    * **Our solution**: Our approach is to basically give up on trying to figure out the exact runtime conditions that will be used in module resolution, and instead package all reasonable conditions for a given module import. This means that maintain correctness at the cost of slightly larger zip sizes for libraries that ship multiple versions of exports.
+    * **Our implementation**: When `trace-deps` encounters a dependency, it resolves the file according to old CommonJS (reading `package.json:main`) and then in modern Node.js `package.json:exports` mode with each of the following built-in / suggested official conditions: `import`, `require`, `node`, `default`, `development`, and `production`. (We ignore `browser`).
 
 * **Includes `package.json` files used in resolution**: As this is a Node.js-focused library, to follow the Node.js [module resolution algorithm](https://nodejs.org/api/modules.html#modules_all_together) which notably uses intermediate encountered `package.json` files to determine how to resolve modules. This means that we include a lot of `package.json` files that seemingly aren't directly imported (such as a `const pkg = require("mod/package.json")`) because they are needed for the list of all traced files to together resolve correctly if all on disk together.
 
