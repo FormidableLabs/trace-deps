@@ -1762,7 +1762,9 @@ describe("lib/trace", () => {
                 "node_modules/complicated/package.json",
                 "node_modules/complicated/sub1/index.cjs",
                 "node_modules/complicated/sub1/index.js",
-                "node_modules/complicated/sub1/index.mjs"
+                "node_modules/complicated/sub1/index.mjs",
+                "node_modules/complicated/sub2/another.cjs",
+                "node_modules/complicated/sub2/another.mjs"
               ]));
               expect(misses).to.eql({});
             });
