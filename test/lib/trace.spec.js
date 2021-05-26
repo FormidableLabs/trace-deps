@@ -1827,12 +1827,39 @@ describe("lib/trace", () => {
         });
 
         describe("throws on missing specified export source", () => {
-          // TODO: Valid export configuration, just the file doesn't exist
-          it("TODO: IMPLEMENT"); // TODO: IMPLEMENT
+          beforeEach(() => {
+            createMock({
+              pkg: {
+                exports: {
+                  ".": [
+                    {
+                      "import": "./doesnt-exist.mjs",
+                      "default": "./default.js"
+                    }
+                  ],
+                  "./package": "./package.json",
+                  "./package.json": "./package.json"
+                }
+              }
+            });
+          });
+
+          [
+            ["CJS static", "require.js"],
+            ["ESM static", "import.mjs"],
+            ["CJS dynamic", "dynamic-import.js"],
+            ["ESM dynamic", "dynamic-import.mjs"]
+          ].forEach(([name, srcPath]) => {
+            it(`throws on ${name} imports`, async () => {
+              await expect(traceFile({ srcPath })).to.be.rejectedWith(
+                `Encountered resolution error in ${srcPath} for complicated: `
+                + "Error: Cannot find export './doesnt-exist.mjs' in module "
+                + "'complicated' from '.'"
+              );
+            });
+          });
         });
       });
-
-      it("TODO: ENUMERATE MORE SCENARIOS"); // TODO: IMPLEMENT
     });
   });
 
