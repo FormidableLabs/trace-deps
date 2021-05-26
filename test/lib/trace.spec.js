@@ -1691,14 +1691,11 @@ describe("lib/trace", () => {
           });
         });
 
-        // TODO: `sub1/PATH`
-        // TODO: `sub2/*.js` wildcard export format.
-        //
-        // TOOD: Create a new file with this to do subpaths.
-        // TODO: HERE -- The first subpath currently fails because of 'resolve' not
-        // getting to the package exports level.
-        // TODO: FAILS import 'subdep/from-import';
-        // TODO: WORKS import 'subdep/from-import.mjs';
+        // Notes:
+        // - `sub1` is an easy index match _with_ the old CJS `sub1/index.js`
+        //   file present, which allows any scenario to resolve.
+        // - `sub2` has export matches for _only_ new CJS / ESM and not old
+        //   CJS, and thus we need to handle that case.
         describe("subpaths", () => {
           beforeEach(() => {
             createMock({
@@ -1713,27 +1710,29 @@ describe("lib/trace", () => {
                   "./package.json": "./package.json",
                   "./sub1": {
                     require: "./sub1/index.cjs",
-                    import: "./sub1/index.mjs"
+                    "import": "./sub1/index.mjs"
+                  },
+                  "./sub2/*": {
+                    require: "./sub2/*.cjs",
+                    "import": "./sub2/*.mjs"
                   }
-                  // TODO: FOR SUB2
-                  // "./sub1/*": {
-                  //   require: "./sub1/*.cjs",
-                  //   import: "./sub1/*.mjs"
-                  // }
                 }
               },
               srcs: {
                 "require-subpath.js": `
                   require("complicated/sub1");
+                  require("complicated/sub2/another");
                 `,
                 "import-subpath.mjs": `
                   import "complicated/sub1";
+                  import "complicated/sub2/another";
                 `,
                 "dynamic-import-subpath.js": `
                   (async () => {
                     let sub1 = "Dynamic import unsupported";
                     try {
                       sub1 = await import("complicated/sub1");
+                      await import("complicated/sub2/another");
                     } catch (e) {}
                   })();
                 `,
@@ -1742,6 +1741,7 @@ describe("lib/trace", () => {
                     let sub1 = "Dynamic import unsupported";
                     try {
                       sub1 = await import("complicated/sub1");
+                      await import("complicated/sub2/another");
                     } catch (e) {}
                   })();
                 `
