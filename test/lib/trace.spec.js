@@ -1590,6 +1590,50 @@ describe("lib/trace", () => {
           });
         });
 
+        // Scenario from: https://github.com/nodejs/help/issues/2733#issuecomment-635975211
+        //
+        // From: https://nodejs.org/api/packages.html#packages_package_entry_points
+        // > As a last resort, package encapsulation can be disabled entirely
+        // > by creating an export for the root of the package "./*": "./*".
+        // > This exposes every file in the package at the cost of disabling
+        // > the encapsulation and potential tooling benefits this provides.
+        // > As the ES Module loader in Node.js enforces the use of the full
+        // > specifier path, exporting the root rather than being explicit
+        // > about entry is less expressive than either of the prior examples.
+        // > Not only is encapsulation lost but module consumers are unable to
+        // > import feature from 'my-mod/feature' as they need to provide the
+        // > full path import feature from 'my-mod/feature/index.js.
+        describe.skip("passthrough export", () => {
+          beforeEach(() => {
+            createMock({
+              pkg: {
+                exports: {
+                  "./": "./"
+                }
+              }
+            });
+          });
+
+          [
+            ["CJS static", "require.js"],
+            ["ESM static", "import.mjs"],
+            ["CJS dynamic", "dynamic-import.js"],
+            ["ESM dynamic", "dynamic-import.mjs"]
+          ].forEach(([name, srcPath]) => {
+            it(`handles ${name} imports`, async () => {
+              const { dependencies, misses } = await traceFile({ srcPath });
+
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/main.js",
+                "node_modules/complicated/package.json",
+                "node_modules/subdep/from-main.js",
+                "node_modules/subdep/package.json"
+              ]));
+              expect(misses).to.eql({});
+            });
+          });
+        });
+
         describe("no require export", () => {
           beforeEach(() => {
             createMock({
