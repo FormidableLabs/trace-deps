@@ -1525,10 +1525,24 @@ describe("lib/trace", () => {
               "browser.js": "module.exports = 'browser';",
               "development.js": "module.exports = 'development';",
               "production.mjs": "const msg = 'production'; export default msg;",
-              "import.mjs": "import 'subdep'; const msg = 'import'; export default msg;",
-              "require.js": "require('subdep/from-require'); module.exports = 'require';",
+              "import.mjs": `
+                import 'subdep';
+                import './local/two.mjs';
+                const msg = 'import';
+                export default msg;
+              `,
+              "require.js": `
+                require('subdep/from-require');
+                require("./local/one");
+                module.exports = 'require';
+              `,
               "default.js": "require('subdep/from-default'); module.exports = 'default';",
               "fallback.js": "module.exports = 'fallback';",
+              // These are _not_ exported, but locally referred to
+              local: {
+                "one.js": "module.exports = 'local/one';",
+                "two.mjs": "const msg = 'two.mjs'; export default msg;"
+              },
               sub1: {
                 "index.js": "module.exports = 'sub1/index.js';",
                 "index.cjs": "module.exports = 'sub1/index.cjs';",
@@ -1669,6 +1683,7 @@ describe("lib/trace", () => {
                 "node_modules/complicated/default.js",
                 "node_modules/complicated/development.js",
                 "node_modules/complicated/import.mjs",
+                "node_modules/complicated/local/two.mjs",
                 "node_modules/complicated/main.js",
                 "node_modules/complicated/package.json",
                 "node_modules/complicated/production.mjs",
@@ -1719,6 +1734,7 @@ describe("lib/trace", () => {
               expect(dependencies).to.eql(fullPaths([
                 "node_modules/complicated/default.js",
                 "node_modules/complicated/development.js",
+                "node_modules/complicated/local/one.js",
                 "node_modules/complicated/main.js",
                 "node_modules/complicated/package.json",
                 "node_modules/complicated/production.mjs",
@@ -1856,6 +1872,8 @@ describe("lib/trace", () => {
               expect(dependencies).to.eql(fullPaths([
                 "node_modules/complicated/development.js",
                 "node_modules/complicated/import.mjs",
+                "node_modules/complicated/local/one.js",
+                "node_modules/complicated/local/two.mjs",
                 "node_modules/complicated/package.json",
                 "node_modules/complicated/production.mjs",
                 "node_modules/complicated/require.js",
