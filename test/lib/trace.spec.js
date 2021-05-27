@@ -1681,7 +1681,6 @@ describe("lib/trace", () => {
                 "node_modules/subdep/import.mjs",
                 "node_modules/subdep/main.js",
                 "node_modules/subdep/package.json"
-
               ]));
               expect(misses).to.eql({});
             });
