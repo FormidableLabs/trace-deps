@@ -1909,6 +1909,65 @@ describe("lib/trace", () => {
           });
         });
       });
+
+      // From https://unpkg.com/browse/jose-node-cjs-runtime@3.12.2/package.json
+      describe("subpath no main", () => {
+        beforeEach(() => {
+          mock({
+            "require.js": `
+              const itsPkg = require("nomain/package");
+              const one = require("nomain/sub/one");
+              const two = require("nomain/sub/two");
+            `,
+            "import.mjs": `
+              import itsPkg from "nomain/package";
+              import one from "nomain/sub/one";
+              import two from "nomain/sub/two";
+              import fs from "fs"; // core package
+            `,
+            node_modules: {
+              nomain: {
+                "package.json": stringify({
+                  name: "nomain",
+                  exports: {
+                    "./sub/one": "./dist/sub/one.js",
+                    "./sub/two": [
+                      {
+                        "import": "./dist/sub/two.mjs"
+                      },
+                      "./dist/sub/two.js"
+                    ]
+                  }
+                }),
+                dist: {
+                  sub: {
+                    "one.js": "module.exports = 'one';",
+                    "two.js": "module.exports = 'two';",
+                    "two.mjs": "const msg = 'two'; export default msg;"
+                  }
+                }
+              }
+            }
+          });
+        });
+
+        [
+          ["CJS static", "require.js"],
+          ["ESM static", "import.mjs"]
+        ].forEach(([name, srcPath]) => {
+          it(`handles ${name} imports`, async () => {
+            const { dependencies, misses } = await traceFile({ srcPath });
+
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/nomain/dist/one.js",
+              "node_modules/nomain/dist/two.js",
+              "node_modules/nomain/dist/two.mjs",
+              "node_modules/nomain/package.json"
+            ]));
+            expect(misses).to.eql({});
+          });
+        });
+      });
     });
   });
 
