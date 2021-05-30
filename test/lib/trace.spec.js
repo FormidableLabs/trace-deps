@@ -1911,7 +1911,7 @@ describe("lib/trace", () => {
       });
 
       // From https://unpkg.com/browse/jose-node-cjs-runtime@3.12.2/package.json
-      describe("subpath no main", () => {
+      describe("subpath no main normal package", () => {
         beforeEach(() => {
           mock({
             "require.js": `
@@ -1959,14 +1959,18 @@ describe("lib/trace", () => {
             const { dependencies, misses } = await traceFile({ srcPath });
 
             expect(dependencies).to.eql(fullPaths([
-              "node_modules/nomain/dist/one.js",
-              "node_modules/nomain/dist/two.js",
-              "node_modules/nomain/dist/two.mjs",
+              "node_modules/nomain/dist/sub/one.js",
+              "node_modules/nomain/dist/sub/two.js",
+              "node_modules/nomain/dist/sub/two.mjs",
               "node_modules/nomain/package.json"
             ]));
             expect(misses).to.eql({});
           });
         });
+      });
+
+      describe("subpath no main scoped package", () => {
+        it("TODO: IMPLEMENT");
       });
     });
   });
