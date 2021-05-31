@@ -2,7 +2,12 @@
 
 const { normalize } = require("path");
 
-const { getPackages, getLastPackage, getLastPackageSegment } = require("../../lib/package");
+const {
+  getPackages,
+  getLastPackage,
+  getLastPackageSegment,
+  getLastPackageRoot
+} = require("../../lib/package");
 
 describe("lib/package", () => {
   describe("getPackages", () => {
@@ -91,6 +96,40 @@ describe("lib/package", () => {
       expect(getLastPackageSegment(
         normalize("node_modules/bar/node_modules/@scope/nested-bar/path/to/nested.js")
       )).to.eql(normalize("@scope/nested-bar/path/to/nested.js"));
+    });
+  });
+
+  describe("getLastPackageRoot", () => {
+    it("handles empty input", () => {
+      expect(getLastPackageRoot()).to.eql(null);
+      expect(getLastPackageRoot(null)).to.eql(null);
+    });
+
+    it("handles no modules", () => {
+      expect(getLastPackageRoot(normalize(""))).to.eql(null);
+      expect(getLastPackageRoot(normalize("src"))).to.eql(null);
+      expect(getLastPackageRoot(normalize("src/nested/path.js"))).to.eql(null);
+      expect(getLastPackageRoot(normalize("path/to/node_modules"))).to.eql(null);
+      expect(getLastPackageRoot(normalize("path/to/node_modules/@scope"))).to.eql(null);
+    });
+
+    it("handles single modules", () => {
+      expect(getLastPackageRoot(normalize("node_modules/bar")))
+        .to.eql(normalize("node_modules/bar"));
+      expect(getLastPackageRoot(normalize("node_modules/bar/src/foo.js")))
+        .to.eql(normalize("node_modules/bar"));
+      expect(getLastPackageRoot(normalize("path/to/node_modules/@scope/foo")))
+        .to.eql(normalize("path/to/node_modules/@scope/foo"));
+      expect(getLastPackageRoot(normalize("path/to/node_modules/@scope/foo/index.js")))
+        .to.eql(normalize("path/to/node_modules/@scope/foo"));
+    });
+
+    it("handles nested modules", () => {
+      expect(getLastPackageRoot(normalize("node_modules/bar/node_modules/@scope/nested-bar")))
+        .to.eql(normalize("node_modules/bar/node_modules/@scope/nested-bar"));
+      expect(getLastPackageRoot(
+        normalize("node_modules/bar/node_modules/@scope/nested-bar/path/to/nested.js")
+      )).to.eql(normalize("node_modules/bar/node_modules/@scope/nested-bar"));
     });
   });
 });
