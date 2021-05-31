@@ -65,6 +65,28 @@ describe("lib/trace", () => {
         );
       });
 
+      it("throws on nonexistent relative source file", async () => {
+        mock({
+          "hi.js": "require('./doesnt-exist');"
+        });
+
+        await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
+          "Encountered resolution error in hi.js for ./doesnt-exist: "
+          + "Error: Cannot find module './doesnt-exist' from '.'"
+        );
+      });
+
+      it("throws on nonexistent absolute source file", async () => {
+        mock({
+          "hi.js": "require('/doesnt-exist');"
+        });
+
+        await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
+          "Encountered resolution error in hi.js for /doesnt-exist: "
+          + "Error: Cannot find module '/doesnt-exist' from '.'"
+        );
+      });
+
       it("throws on nonexistent dependency", async () => {
         mock({
           "hi.js": "require('doesnt-exist');"
