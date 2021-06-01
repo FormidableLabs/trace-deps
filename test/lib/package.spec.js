@@ -6,8 +6,11 @@ const {
   getPackages,
   getLastPackage,
   getLastPackageSegment,
-  getLastPackageRoot
+  getLastPackageRoot,
+  getDependencyParts
 } = require("../../lib/package");
+
+const IS_WIN = process.platform.startsWith("win");
 
 describe("lib/package", () => {
   describe("getPackages", () => {
@@ -130,6 +133,38 @@ describe("lib/package", () => {
       expect(getLastPackageRoot(
         normalize("node_modules/bar/node_modules/@scope/nested-bar/path/to/nested.js")
       )).to.eql(normalize("node_modules/bar/node_modules/@scope/nested-bar"));
+    });
+  });
+
+  describe("getDependencyParts", () => {
+    it("handles empty input", () => {
+      expect(getDependencyParts()).to.eql(null);
+      expect(getDependencyParts(null)).to.eql(null);
+    });
+
+    it("handles no modules", () => {
+      expect(getDependencyParts("")).to.eql(null);
+      expect(getDependencyParts("./src")).to.eql(null);
+      expect(getDependencyParts(".\\src")).to.eql(null);
+      expect(getDependencyParts("./src/nested/path.js")).to.eql(null);
+      expect(getDependencyParts(".\\src\\nested\\path.js")).to.eql(null);
+      expect(getDependencyParts("/abs-path")).to.eql(null);
+      expect(getDependencyParts("/abs-path/to/src/file.js")).to.eql(null);
+
+      if (IS_WIN) {
+        expect(getDependencyParts("d:\\abs-path")).to.eql(null);
+        expect(getDependencyParts("d:\\abs-path\\to\\src/\\ile.js")).to.eql(null);
+      }
+    });
+
+    it.skip("handles unscoped modules", () => {
+      expect(getDependencyParts("bar"))
+        .to.eql(normalize("TODO"));
+    });
+
+    it.skip("handles scoped modules", () => {
+      expect(getDependencyParts("@scope/bar"))
+        .to.eql(normalize("TODO"));
     });
   });
 });
