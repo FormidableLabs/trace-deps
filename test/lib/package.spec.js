@@ -144,6 +144,8 @@ describe("lib/package", () => {
 
     it("handles no modules", () => {
       expect(getDependencyParts("")).to.eql(null);
+      expect(getDependencyParts("@scope-only")).to.eql(null);
+      expect(getDependencyParts("@scope-only/")).to.eql(null);
       expect(getDependencyParts("./src")).to.eql(null);
       expect(getDependencyParts(".\\src")).to.eql(null);
       expect(getDependencyParts("./src/nested/path.js")).to.eql(null);
@@ -156,6 +158,7 @@ describe("lib/package", () => {
         expect(getDependencyParts("d:\\abs-path\\to\\src/\\ile.js")).to.eql(null);
       }
     });
+
 
     it.skip("handles unscoped modules", () => {
       expect(getDependencyParts("bar"))
