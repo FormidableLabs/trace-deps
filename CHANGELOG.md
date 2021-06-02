@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.4.0
 
 * Feature: Add full support for modern Node.js ESM and `exports`.
   [#49](https://github.com/FormidableLabs/trace-deps/issues/51)
