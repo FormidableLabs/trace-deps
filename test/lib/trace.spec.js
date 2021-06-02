@@ -1991,6 +1991,11 @@ describe("lib/trace", () => {
         });
       });
 
+      describe("subpath no main dotted resolve single path", () => {
+        // TODO: nomain/not-here/../sub
+        it("TODO: IMPLEMENT");
+      });
+
       describe("subpath no main scoped package", () => {
         it("TODO: IMPLEMENT");
       });

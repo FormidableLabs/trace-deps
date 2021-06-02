@@ -160,14 +160,82 @@ describe("lib/package", () => {
     });
 
 
-    it.skip("handles unscoped modules", () => {
-      expect(getDependencyParts("bar"))
-        .to.eql(normalize("TODO"));
+    it("handles unscoped modules", () => {
+      expect(getDependencyParts("bar")).to.eql({
+        name: "bar",
+        parts: []
+      });
+      expect(getDependencyParts("bar/")).to.eql({
+        name: "bar",
+        parts: []
+      });
+      expect(getDependencyParts("bar\\")).to.eql({
+        name: "bar",
+        parts: []
+      });
+      expect(getDependencyParts("bar/one")).to.eql({
+        name: "bar",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("bar\\one")).to.eql({
+        name: "bar",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("bar/not-here/../one")).to.eql({
+        name: "bar",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("bar\\not-here\\..\\one")).to.eql({
+        name: "bar",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("bar/one/two/three.js")).to.eql({
+        name: "bar",
+        parts: ["one", "two", "three.js"]
+      });
+      expect(getDependencyParts("bar\\one\\two\\three.js")).to.eql({
+        name: "bar",
+        parts: ["one", "two", "three.js"]
+      });
     });
 
-    it.skip("handles scoped modules", () => {
-      expect(getDependencyParts("@scope/bar"))
-        .to.eql(normalize("TODO"));
+    it("handles scoped modules", () => {
+      expect(getDependencyParts("@scope/pkg")).to.eql({
+        name: "@scope/pkg",
+        parts: []
+      });
+      expect(getDependencyParts("@scope/pkg/")).to.eql({
+        name: "@scope/pkg",
+        parts: []
+      });
+      expect(getDependencyParts("@scope\\pkg\\")).to.eql({
+        name: "@scope/pkg",
+        parts: []
+      });
+      expect(getDependencyParts("@scope/pkg/one")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("@scope\\pkg\\one")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("@scope/pkg/not-here/../one")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("@scope\\pkg\\not-here\\..\\one")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("@scope/pkg/one/two/three.js")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one", "two", "three.js"]
+      });
+      expect(getDependencyParts("@scope\\pkg\\one\\two\\three.js")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one", "two", "three.js"]
+      });
     });
   });
 });
