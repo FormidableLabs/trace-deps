@@ -65,6 +65,28 @@ describe("lib/trace", () => {
         );
       });
 
+      it("throws on nonexistent relative source file", async () => {
+        mock({
+          "hi.js": "require('./doesnt-exist');"
+        });
+
+        await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
+          "Encountered resolution error in hi.js for ./doesnt-exist: "
+          + "Error: Cannot find module './doesnt-exist' from '.'"
+        );
+      });
+
+      it("throws on nonexistent absolute source file", async () => {
+        mock({
+          "hi.js": "require('/doesnt-exist');"
+        });
+
+        await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
+          "Encountered resolution error in hi.js for /doesnt-exist: "
+          + "Error: Cannot find module '/doesnt-exist' from '.'"
+        );
+      });
+
       it("throws on nonexistent dependency", async () => {
         mock({
           "hi.js": "require('doesnt-exist');"
@@ -1911,17 +1933,19 @@ describe("lib/trace", () => {
       });
 
       // From https://unpkg.com/browse/jose-node-cjs-runtime@3.12.2/package.json
-      describe("subpath no main", () => {
+      describe("subpath no main normal package", () => {
         beforeEach(() => {
           mock({
             "require.js": `
               const itsPkg = require("nomain/package");
-              const one = require("nomain/sub/one");
+              const one = require("nomain/one");
+              const subOne = require("nomain/sub/one");
               const two = require("nomain/sub/two");
             `,
             "import.mjs": `
               import itsPkg from "nomain/package";
-              import one from "nomain/sub/one";
+              import one from "nomain/one";
+              import subOne from "nomain/sub/one";
               import two from "nomain/sub/two";
               import fs from "fs"; // core package
             `,
@@ -1930,6 +1954,7 @@ describe("lib/trace", () => {
                 "package.json": stringify({
                   name: "nomain",
                   exports: {
+                    "./one": "./dist/one.js",
                     "./sub/one": "./dist/sub/one.js",
                     "./sub/two": [
                       {
@@ -1940,6 +1965,7 @@ describe("lib/trace", () => {
                   }
                 }),
                 dist: {
+                  "one.js": "module.exports = 'root-one';",
                   sub: {
                     "one.js": "module.exports = 'one';",
                     "two.js": "module.exports = 'two';",
@@ -1960,9 +1986,75 @@ describe("lib/trace", () => {
 
             expect(dependencies).to.eql(fullPaths([
               "node_modules/nomain/dist/one.js",
-              "node_modules/nomain/dist/two.js",
-              "node_modules/nomain/dist/two.mjs",
+              "node_modules/nomain/dist/sub/one.js",
+              "node_modules/nomain/dist/sub/two.js",
+              "node_modules/nomain/dist/sub/two.mjs",
               "node_modules/nomain/package.json"
+            ]));
+            expect(misses).to.eql({});
+          });
+        });
+      });
+
+      describe("subpath no main scoped package", () => {
+        beforeEach(() => {
+          mock({
+            "require.js": `
+              const itsPkg = require("@scope/nomain/package");
+              const one = require("@scope/nomain/one");
+              const subOne = require("@scope/nomain/sub/one");
+              const two = require("@scope/nomain/sub/two");
+            `,
+            "import.mjs": `
+              import itsPkg from "@scope/nomain/package";
+              import one from "@scope/nomain/one";
+              import subOne from "@scope/nomain/sub/one";
+              import two from "@scope/nomain/sub/two";
+              import fs from "fs"; // core package
+            `,
+            node_modules: {
+              "@scope": {
+                nomain: {
+                  "package.json": stringify({
+                    name: "@scope/nomain",
+                    exports: {
+                      "./one": "./dist/one.js",
+                      "./sub/one": "./dist/sub/one.js",
+                      "./sub/two": [
+                        {
+                          "import": "./dist/sub/two.mjs"
+                        },
+                        "./dist/sub/two.js"
+                      ]
+                    }
+                  }),
+                  dist: {
+                    "one.js": "module.exports = 'root-one';",
+                    sub: {
+                      "one.js": "module.exports = 'one';",
+                      "two.js": "module.exports = 'two';",
+                      "two.mjs": "const msg = 'two'; export default msg;"
+                    }
+                  }
+                }
+              }
+            }
+          });
+        });
+
+        [
+          ["CJS static", "require.js"],
+          ["ESM static", "import.mjs"]
+        ].forEach(([name, srcPath]) => {
+          it(`handles ${name} imports`, async () => {
+            const { dependencies, misses } = await traceFile({ srcPath });
+
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/@scope/nomain/dist/one.js",
+              "node_modules/@scope/nomain/dist/sub/one.js",
+              "node_modules/@scope/nomain/dist/sub/two.js",
+              "node_modules/@scope/nomain/dist/sub/two.mjs",
+              "node_modules/@scope/nomain/package.json"
             ]));
             expect(misses).to.eql({});
           });
