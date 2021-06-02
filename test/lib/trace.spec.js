@@ -1938,12 +1938,14 @@ describe("lib/trace", () => {
           mock({
             "require.js": `
               const itsPkg = require("nomain/package");
-              const one = require("nomain/sub/one");
+              const one = require("nomain/one");
+              const subOne = require("nomain/sub/one");
               const two = require("nomain/sub/two");
             `,
             "import.mjs": `
               import itsPkg from "nomain/package";
-              import one from "nomain/sub/one";
+              import one from "nomain/one";
+              import subOne from "nomain/sub/one";
               import two from "nomain/sub/two";
               import fs from "fs"; // core package
             `,
@@ -1952,6 +1954,7 @@ describe("lib/trace", () => {
                 "package.json": stringify({
                   name: "nomain",
                   exports: {
+                    "./one": "./dist/one.js",
                     "./sub/one": "./dist/sub/one.js",
                     "./sub/two": [
                       {
@@ -1962,6 +1965,7 @@ describe("lib/trace", () => {
                   }
                 }),
                 dist: {
+                  "one.js": "module.exports = 'root-one';",
                   sub: {
                     "one.js": "module.exports = 'one';",
                     "two.js": "module.exports = 'two';",
@@ -1981,6 +1985,7 @@ describe("lib/trace", () => {
             const { dependencies, misses } = await traceFile({ srcPath });
 
             expect(dependencies).to.eql(fullPaths([
+              "node_modules/nomain/dist/one.js",
               "node_modules/nomain/dist/sub/one.js",
               "node_modules/nomain/dist/sub/two.js",
               "node_modules/nomain/dist/sub/two.mjs",
