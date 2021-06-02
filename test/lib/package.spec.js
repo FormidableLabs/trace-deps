@@ -2,7 +2,15 @@
 
 const { normalize } = require("path");
 
-const { getPackages, getLastPackage, getLastPackageSegment } = require("../../lib/package");
+const {
+  getPackages,
+  getLastPackage,
+  getLastPackageSegment,
+  getLastPackageRoot,
+  getDependencyParts
+} = require("../../lib/package");
+
+const IS_WIN = process.platform.startsWith("win");
 
 describe("lib/package", () => {
   describe("getPackages", () => {
@@ -91,6 +99,143 @@ describe("lib/package", () => {
       expect(getLastPackageSegment(
         normalize("node_modules/bar/node_modules/@scope/nested-bar/path/to/nested.js")
       )).to.eql(normalize("@scope/nested-bar/path/to/nested.js"));
+    });
+  });
+
+  describe("getLastPackageRoot", () => {
+    it("handles empty input", () => {
+      expect(getLastPackageRoot()).to.eql(null);
+      expect(getLastPackageRoot(null)).to.eql(null);
+    });
+
+    it("handles no modules", () => {
+      expect(getLastPackageRoot(normalize(""))).to.eql(null);
+      expect(getLastPackageRoot(normalize("src"))).to.eql(null);
+      expect(getLastPackageRoot(normalize("src/nested/path.js"))).to.eql(null);
+      expect(getLastPackageRoot(normalize("path/to/node_modules"))).to.eql(null);
+      expect(getLastPackageRoot(normalize("path/to/node_modules/@scope"))).to.eql(null);
+    });
+
+    it("handles single modules", () => {
+      expect(getLastPackageRoot(normalize("node_modules/bar")))
+        .to.eql(normalize("node_modules/bar"));
+      expect(getLastPackageRoot(normalize("node_modules/bar/src/foo.js")))
+        .to.eql(normalize("node_modules/bar"));
+      expect(getLastPackageRoot(normalize("path/to/node_modules/@scope/foo")))
+        .to.eql(normalize("path/to/node_modules/@scope/foo"));
+      expect(getLastPackageRoot(normalize("path/to/node_modules/@scope/foo/index.js")))
+        .to.eql(normalize("path/to/node_modules/@scope/foo"));
+    });
+
+    it("handles nested modules", () => {
+      expect(getLastPackageRoot(normalize("node_modules/bar/node_modules/@scope/nested-bar")))
+        .to.eql(normalize("node_modules/bar/node_modules/@scope/nested-bar"));
+      expect(getLastPackageRoot(
+        normalize("node_modules/bar/node_modules/@scope/nested-bar/path/to/nested.js")
+      )).to.eql(normalize("node_modules/bar/node_modules/@scope/nested-bar"));
+    });
+  });
+
+  describe("getDependencyParts", () => {
+    it("handles empty input", () => {
+      expect(getDependencyParts()).to.eql(null);
+      expect(getDependencyParts(null)).to.eql(null);
+    });
+
+    it("handles no modules", () => {
+      expect(getDependencyParts("")).to.eql(null);
+      expect(getDependencyParts("@scope-only")).to.eql(null);
+      expect(getDependencyParts("@scope-only/")).to.eql(null);
+      expect(getDependencyParts("./src")).to.eql(null);
+      expect(getDependencyParts(".\\src")).to.eql(null);
+      expect(getDependencyParts("./src/nested/path.js")).to.eql(null);
+      expect(getDependencyParts(".\\src\\nested\\path.js")).to.eql(null);
+      expect(getDependencyParts("/abs-path")).to.eql(null);
+      expect(getDependencyParts("/abs-path/to/src/file.js")).to.eql(null);
+
+      if (IS_WIN) {
+        expect(getDependencyParts("d:\\abs-path")).to.eql(null);
+        expect(getDependencyParts("d:\\abs-path\\to\\src/\\ile.js")).to.eql(null);
+      }
+    });
+
+
+    it("handles unscoped modules", () => {
+      expect(getDependencyParts("bar")).to.eql({
+        name: "bar",
+        parts: []
+      });
+      expect(getDependencyParts("bar/")).to.eql({
+        name: "bar",
+        parts: []
+      });
+      expect(getDependencyParts("bar\\")).to.eql({
+        name: "bar",
+        parts: []
+      });
+      expect(getDependencyParts("bar/one")).to.eql({
+        name: "bar",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("bar\\one")).to.eql({
+        name: "bar",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("bar/not-here/../one")).to.eql({
+        name: "bar",
+        parts: ["not-here", "..", "one"]
+      });
+      expect(getDependencyParts("bar\\not-here\\..\\one")).to.eql({
+        name: "bar",
+        parts: ["not-here", "..", "one"]
+      });
+      expect(getDependencyParts("bar/one/two/three.js")).to.eql({
+        name: "bar",
+        parts: ["one", "two", "three.js"]
+      });
+      expect(getDependencyParts("bar\\one\\two\\three.js")).to.eql({
+        name: "bar",
+        parts: ["one", "two", "three.js"]
+      });
+    });
+
+    it("handles scoped modules", () => {
+      expect(getDependencyParts("@scope/pkg")).to.eql({
+        name: "@scope/pkg",
+        parts: []
+      });
+      expect(getDependencyParts("@scope/pkg/")).to.eql({
+        name: "@scope/pkg",
+        parts: []
+      });
+      expect(getDependencyParts("@scope\\pkg\\")).to.eql({
+        name: "@scope/pkg",
+        parts: []
+      });
+      expect(getDependencyParts("@scope/pkg/one")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("@scope\\pkg\\one")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one"]
+      });
+      expect(getDependencyParts("@scope/pkg/not-here/../one")).to.eql({
+        name: "@scope/pkg",
+        parts: ["not-here", "..", "one"]
+      });
+      expect(getDependencyParts("@scope\\pkg\\not-here\\..\\one")).to.eql({
+        name: "@scope/pkg",
+        parts: ["not-here", "..", "one"]
+      });
+      expect(getDependencyParts("@scope/pkg/one/two/three.js")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one", "two", "three.js"]
+      });
+      expect(getDependencyParts("@scope\\pkg\\one\\two\\three.js")).to.eql({
+        name: "@scope/pkg",
+        parts: ["one", "two", "three.js"]
+      });
     });
   });
 });
