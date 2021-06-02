@@ -1996,13 +1996,69 @@ describe("lib/trace", () => {
         });
       });
 
-      describe("subpath no main dotted resolve single path", () => {
-        // TODO: nomain/not-here/../sub
-        it("TODO: IMPLEMENT");
-      });
-
       describe("subpath no main scoped package", () => {
-        it("TODO: IMPLEMENT");
+        beforeEach(() => {
+          mock({
+            "require.js": `
+              const itsPkg = require("@scope/nomain/package");
+              const one = require("@scope/nomain/one");
+              const subOne = require("@scope/nomain/sub/one");
+              const two = require("@scope/nomain/sub/two");
+            `,
+            "import.mjs": `
+              import itsPkg from "@scope/nomain/package";
+              import one from "@scope/nomain/one";
+              import subOne from "@scope/nomain/sub/one";
+              import two from "@scope/nomain/sub/two";
+              import fs from "fs"; // core package
+            `,
+            node_modules: {
+              "@scope": {
+                nomain: {
+                  "package.json": stringify({
+                    name: "@scope/nomain",
+                    exports: {
+                      "./one": "./dist/one.js",
+                      "./sub/one": "./dist/sub/one.js",
+                      "./sub/two": [
+                        {
+                          "import": "./dist/sub/two.mjs"
+                        },
+                        "./dist/sub/two.js"
+                      ]
+                    }
+                  }),
+                  dist: {
+                    "one.js": "module.exports = 'root-one';",
+                    sub: {
+                      "one.js": "module.exports = 'one';",
+                      "two.js": "module.exports = 'two';",
+                      "two.mjs": "const msg = 'two'; export default msg;"
+                    }
+                  }
+                }
+              }
+            }
+          });
+        });
+
+        [
+          ["CJS static", "require.js"],
+          ["ESM static", "import.mjs"]
+        ].forEach(([name, srcPath]) => {
+          it(`handles ${name} imports`, async () => {
+            const { dependencies, misses } = await traceFile({ srcPath });
+
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/@scope/nomain/dist/one.js",
+              "node_modules/@scope/nomain/dist/sub/one.js",
+              "node_modules/@scope/nomain/dist/sub/two.js",
+              "node_modules/@scope/nomain/dist/sub/two.mjs",
+              "node_modules/@scope/nomain/package.json"
+            ]));
+            expect(misses).to.eql({});
+          });
+        });
       });
     });
   });

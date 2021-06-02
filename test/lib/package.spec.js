@@ -183,11 +183,11 @@ describe("lib/package", () => {
       });
       expect(getDependencyParts("bar/not-here/../one")).to.eql({
         name: "bar",
-        parts: ["one"]
+        parts: ["not-here", "..", "one"]
       });
       expect(getDependencyParts("bar\\not-here\\..\\one")).to.eql({
         name: "bar",
-        parts: ["one"]
+        parts: ["not-here", "..", "one"]
       });
       expect(getDependencyParts("bar/one/two/three.js")).to.eql({
         name: "bar",
@@ -222,11 +222,11 @@ describe("lib/package", () => {
       });
       expect(getDependencyParts("@scope/pkg/not-here/../one")).to.eql({
         name: "@scope/pkg",
-        parts: ["one"]
+        parts: ["not-here", "..", "one"]
       });
       expect(getDependencyParts("@scope\\pkg\\not-here\\..\\one")).to.eql({
         name: "@scope/pkg",
-        parts: ["one"]
+        parts: ["not-here", "..", "one"]
       });
       expect(getDependencyParts("@scope/pkg/one/two/three.js")).to.eql({
         name: "@scope/pkg",
