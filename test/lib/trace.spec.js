@@ -1521,8 +1521,12 @@ describe("lib/trace", () => {
               publicRequire = require("two");
               #privateName = "RequiredError";
               #privateImportPromise = import("three");
-              static staticName = "RequiredError";
-              static staticRequire = require("four");
+              static staticName = {
+                name: "RequiredError"
+              };
+              static staticRequire = {
+                objField: require("four")
+              };
 
               constructor(field, msg) {
                 super(msg);
