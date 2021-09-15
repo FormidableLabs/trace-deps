@@ -3,7 +3,8 @@ Changes
 
 ## UNRELEASED
 
-* Bug: Handle `class` fields.
+* Bug: Handle `class` fields (public, private, static).
+  [#64](https://github.com/FormidableLabs/trace-deps/issues/64)
 
 ## 0.4.0
 
