@@ -1502,6 +1502,42 @@ describe("lib/trace", () => {
 
         expect(missesMap({ misses })).to.be.eql({});
       });
+
+      it("handles static class fields", async () => {
+        mock({
+          "hi.js": `
+            require("one");
+
+            class RequiredError extends Error {
+              name = "RequiredError";
+
+              constructor(field, msg) {
+                super(msg);
+                this.field = field;
+              }
+            }
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'one';
+              `
+            }
+          }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({ srcPath });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json"
+        ]));
+
+        expect(missesMap({ misses })).to.be.eql({});
+      });
     });
 
     describe("modern ESM exports", () => {

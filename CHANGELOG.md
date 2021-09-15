@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Bug: Handle static `class` fields.
+
 ## 0.4.0
 
 * Feature: Add full support for modern Node.js ESM and `exports`.
