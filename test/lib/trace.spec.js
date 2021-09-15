@@ -1513,7 +1513,6 @@ describe("lib/trace", () => {
           "hi.js": `
             require("one");
 
-            // TODO: static class field test + require/import
             class RequiredError extends Error {
               publicName = "RequiredError";
               publicRequire = require("two");
