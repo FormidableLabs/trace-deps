@@ -1503,11 +1503,19 @@ describe("lib/trace", () => {
         expect(missesMap({ misses })).to.be.eql({});
       });
 
-      it("handles static class fields", async () => {
+      // Class field support in Node.js
+      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields
+      // - Public:  12.0.0
+      // - Private: 12.0.0
+      // - Static:  12.0.0
+      it("handles class fields", async () => {
         mock({
           "hi.js": `
             require("one");
 
+            // TODO: public class field test
+            // TODO: private class field test
+            // TODO: static class field test
             class RequiredError extends Error {
               name = "RequiredError";
 

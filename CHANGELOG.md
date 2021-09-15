@@ -3,7 +3,7 @@ Changes
 
 ## UNRELEASED
 
-* Bug: Handle static `class` fields.
+* Bug: Handle `class` fields.
 
 ## 0.4.0
 
