@@ -1513,11 +1513,14 @@ describe("lib/trace", () => {
           "hi.js": `
             require("one");
 
-            // TODO: private class field test + require/import
             // TODO: static class field test + require/import
             class RequiredError extends Error {
-              name = "RequiredError";
+              publicName = "RequiredError";
               publicRequire = require("two");
+              #privateName = "RequiredError";
+              #privateImportPromise = import("three");
+              static staticName = "RequiredError";
+              static staticRequire = require("four");
 
               constructor(field, msg) {
                 super(msg);
@@ -1541,6 +1544,22 @@ describe("lib/trace", () => {
               "index.js": `
                 module.exports = 'two';
               `
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'three';
+              `
+            },
+            four: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'four';
+              `
             }
           }
         });
@@ -1548,8 +1567,12 @@ describe("lib/trace", () => {
         const srcPath = "hi.js";
         const { dependencies, misses } = await traceFile({ srcPath });
         expect(dependencies).to.eql(fullPaths([
+          "node_modules/four/index.js",
+          "node_modules/four/package.json",
           "node_modules/one/index.js",
           "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
           "node_modules/two/index.js",
           "node_modules/two/package.json"
         ]));
