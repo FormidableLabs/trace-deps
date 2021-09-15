@@ -1513,11 +1513,11 @@ describe("lib/trace", () => {
           "hi.js": `
             require("one");
 
-            // TODO: public class field test
-            // TODO: private class field test
-            // TODO: static class field test
+            // TODO: private class field test + require/import
+            // TODO: static class field test + require/import
             class RequiredError extends Error {
               name = "RequiredError";
+              publicRequire = require("two");
 
               constructor(field, msg) {
                 super(msg);
@@ -1533,6 +1533,14 @@ describe("lib/trace", () => {
               "index.js": `
                 module.exports = 'one';
               `
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'two';
+              `
             }
           }
         });
@@ -1541,7 +1549,9 @@ describe("lib/trace", () => {
         const { dependencies, misses } = await traceFile({ srcPath });
         expect(dependencies).to.eql(fullPaths([
           "node_modules/one/index.js",
-          "node_modules/one/package.json"
+          "node_modules/one/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
         ]));
 
         expect(missesMap({ misses })).to.be.eql({});
