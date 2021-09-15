@@ -1504,10 +1504,13 @@ describe("lib/trace", () => {
       });
 
       // Class field support in Node.js
-      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields
+      //
+      // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields
       // - Public:  12.0.0
       // - Private: 12.0.0
       // - Static:  12.0.0
+      //
+      // Regression test for: https://github.com/FormidableLabs/trace-deps/issues/64
       it("handles class fields", async () => {
         mock({
           "hi.js": `
