@@ -1502,6 +1502,89 @@ describe("lib/trace", () => {
 
         expect(missesMap({ misses })).to.be.eql({});
       });
+
+      // Class field support in Node.js
+      //
+      // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields
+      // - Public:  12.0.0
+      // - Private: 12.0.0
+      // - Static:  12.0.0
+      //
+      // Regression test for: https://github.com/FormidableLabs/trace-deps/issues/64
+      it("handles class fields", async () => {
+        mock({
+          "hi.js": `
+            require("one");
+
+            class RequiredError extends Error {
+              publicName = "RequiredError";
+              publicRequire = require("two");
+              #privateName = "RequiredError";
+              #privateImportPromise = import("three");
+              static staticName = {
+                name: "RequiredError"
+              };
+              static staticRequire = {
+                objField: require("four")
+              };
+
+              constructor(field, msg) {
+                super(msg);
+                this.field = field;
+              }
+            }
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'one';
+              `
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'two';
+              `
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'three';
+              `
+            },
+            four: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'four';
+              `
+            }
+          }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({ srcPath });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/four/index.js",
+          "node_modules/four/package.json",
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+
+        expect(missesMap({ misses })).to.be.eql({});
+      });
     });
 
     describe("modern ESM exports", () => {

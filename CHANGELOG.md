@@ -1,6 +1,11 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Bug: Handle `class` fields (public, private, static).
+  [#64](https://github.com/FormidableLabs/trace-deps/issues/64)
+
 ## 0.4.0
 
 * Feature: Add full support for modern Node.js ESM and `exports`.
