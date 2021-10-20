@@ -1113,6 +1113,72 @@ describe("lib/trace", () => {
         }));
       });
 
+      it("handles top-level await imports with .mjs", async () => {
+        mock({
+          "hi.mjs": `
+            import one from "one";
+            const dynamicTwo = () => import("two");
+
+            await import("three");
+            const variableDep = "shouldnt-find";
+            await import(variableDep);
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                const one = 'one';
+                export default one;
+              `
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                const two = 'two';
+                export default two;
+              `
+            },
+            three: {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": `
+                import three from "nested-flattened-three";
+                export default three;
+              `
+            },
+            "nested-flattened-three": {
+              "package.json": stringify({
+                main: "index.mjs"
+              }),
+              "index.mjs": "export const three = 'three';"
+            }
+          }
+        });
+
+        const srcPath = "hi.mjs";
+        const { dependencies, misses } = await traceFile({ srcPath });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/nested-flattened-three/index.mjs",
+          "node_modules/nested-flattened-three/package.json",
+          "node_modules/one/index.mjs",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/package.json",
+          "node_modules/two/index.mjs",
+          "node_modules/two/package.json"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "import(variableDep)"
+          ]
+        }));
+      });
+
       it("handles lower directories than where file is located", async () => {
         mock({
           nested: {
