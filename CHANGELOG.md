@@ -1,6 +1,12 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Internal: Misc dependency updates.
+* Infra: Upgrade `mock-fs` and enabled Node 16.3+.
+  [#61](https://github.com/FormidableLabs/trace-deps/issues/61)
+
 ## 0.4.2
 
 * Bug: Handle top-level `await` in source files.
