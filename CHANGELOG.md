@@ -1,6 +1,11 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Bug: Handle top-level `await` in source files.
+  [#65](https://github.com/FormidableLabs/trace-deps/pull/65)
+
 ## 0.4.1
 
 * Bug: Handle `class` fields (public, private, static).
