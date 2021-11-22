@@ -2210,8 +2210,7 @@ describe("lib/trace", () => {
         });
       });
 
-      //
-      // https://github.com/FormidableLabs/trace-pkg/issues/44
+      // Regression for: https://github.com/FormidableLabs/trace-pkg/issues/44
       describe("local imports vs export fields", () => {
         beforeEach(() => {
           mock({
@@ -2232,13 +2231,14 @@ describe("lib/trace", () => {
                     },
                     "./lib/context": "./lib/context.js",
                     "./lib/context.js": "./lib/context.js",
-                    //"./*": "./*.js"
+                    // This export is source of issue for #trace-pkg/44
+                    "./*": "./*.js",
                     "./*.js": "./*.js",
                     "./package": "./package.json",
                     "./package.json": "./package.json"
                   }
                 }),
-                "lib": {
+                lib: {
                   "index.js": `
                     const context = require("./context");
                   `,
