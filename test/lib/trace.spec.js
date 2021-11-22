@@ -2209,6 +2209,64 @@ describe("lib/trace", () => {
           });
         });
       });
+
+      //
+      // https://github.com/FormidableLabs/trace-pkg/issues/44
+      describe("local imports vs export fields", () => {
+        beforeEach(() => {
+          mock({
+            "require.js": `
+              const pkg = require("pkg");
+            `,
+            "import.mjs": `
+              import pkg from "pkg";
+            `,
+            node_modules: {
+              pkg: {
+                "package.json": stringify({
+                  name: "pkg",
+                  main: "lib/index.js",
+                  exports: {
+                    ".": {
+                      "default": "./lib/index.js"
+                    },
+                    "./lib/context": "./lib/context.js",
+                    "./lib/context.js": "./lib/context.js",
+                    //"./*": "./*.js"
+                    "./*.js": "./*.js",
+                    "./package": "./package.json",
+                    "./package.json": "./package.json"
+                  }
+                }),
+                "lib": {
+                  "index.js": `
+                    const context = require("./context");
+                  `,
+                  "context.js": `
+                    module.exports = "context";
+                  `
+                }
+              }
+            }
+          });
+        });
+
+        [
+          ["CJS static", "require.js"],
+          ["ESM static", "import.mjs"]
+        ].forEach(([name, srcPath]) => {
+          it(`handles ${name} imports`, async () => {
+            const { dependencies, misses } = await traceFile({ srcPath });
+
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/pkg/lib/context.js",
+              "node_modules/pkg/lib/index.js",
+              "node_modules/pkg/package.json"
+            ]));
+            expect(misses).to.eql({});
+          });
+        });
+      });
     });
   });
 
