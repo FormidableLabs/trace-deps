@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.4.3
 
 * Bug: Handle (and ignore) additional passthrough wildcard `{ "./*": "./*.js" }`
   [#68](https://github.com/FormidableLabs/trace-deps/issues/68)
