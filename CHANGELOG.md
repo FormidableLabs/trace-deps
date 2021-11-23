@@ -3,6 +3,8 @@ Changes
 
 ## UNRELEASED
 
+* Bug: Handle (and ignore) additional passthrough wildcard `{ "./*": "./*.js" }`
+  [#68](https://github.com/FormidableLabs/trace-deps/issues/68)
 * Internal: Misc dependency updates.
 * Infra: Upgrade `mock-fs` and enabled Node 16.3+.
   [#61](https://github.com/FormidableLabs/trace-deps/issues/61)
