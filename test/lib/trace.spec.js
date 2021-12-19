@@ -1924,7 +1924,10 @@ describe("lib/trace", () => {
                 "node_modules/pkg/index.cjs",
                 "node_modules/pkg/index.js",
                 "node_modules/pkg/index.mjs",
-                "node_modules/pkg/package.json"
+                "node_modules/pkg/package.json",
+                "node_modules/pkg/sub.cjs",
+                "node_modules/pkg/sub.js",
+                "node_modules/pkg/sub.mjs"
               ]));
               expect(misses).to.eql({});
             });
