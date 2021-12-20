@@ -2829,5 +2829,49 @@ describe("lib/trace", () => {
       expect(dependencies).to.eql(fullPaths(["foo.mjs"]));
       expect(misses).to.eql({});
     });
+
+    it("Self-referencing a package using its name", async () => {
+      mock({
+        "hi.js": `
+          import reference from 'a-package/reference';
+        `,
+        node_modules: {
+          "a-package": {
+            "package.json": stringify({
+              name: "a-package",
+              exports: {
+                ".": "./main.mjs",
+                "./reference": "./reference.mjs"
+              }
+            }),
+            "main.mjs": `
+              const main = () => 'main';
+
+              export default main;
+            `,
+            "reference.mjs": `
+              import main from 'a-package';
+
+              const reference = () => main();
+
+              export default reference;
+            `
+          }
+        }
+      });
+
+      const { dependencies, misses } = await traceFiles({
+        srcPaths: ["hi.js"]
+      });
+
+      expect(dependencies).to.eql(
+        fullPaths([
+          "node_modules/a-package/main.mjs",
+          "node_modules/a-package/package.json",
+          "node_modules/a-package/reference.mjs"
+        ])
+      );
+      expect(misses).to.eql({});
+    });
   });
 });
