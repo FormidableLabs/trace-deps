@@ -1942,7 +1942,6 @@ describe("lib/trace", () => {
           });
         });
 
-
         describe("no require export", () => {
           beforeEach(() => {
             createMock({
