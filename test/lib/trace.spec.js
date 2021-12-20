@@ -1865,6 +1865,83 @@ describe("lib/trace", () => {
           });
         });
 
+        // Regression for: https://github.com/FormidableLabs/trace-deps/issues/70
+        describe("suffixed .mjs/.js/.cjs local paths with wildcards", () => {
+          beforeEach(() => {
+            mock({
+              "require.js": `
+                const pkg = require("pkg/index"); // => pkg/index.cjs
+              `,
+              "import.mjs": `
+                import pkg from "pkg/index"; // => pkg/index.mjs
+              `,
+              node_modules: {
+                pkg: {
+                  "package.json": stringify({
+                    name: "pkg",
+                    main: "index.js",
+                    exports: {
+                      "./*": {
+                        require: "./*.cjs",
+                        "import": "./*.mjs"
+                      }
+                    }
+                  }),
+                  "index.js": `
+                    const { sub } = require("./sub.js");
+                    const { sub2 } = require("./sub-2"); // suffix inferred
+
+                    module.exports.msg = "js";
+                  `,
+                  "index.cjs": `
+                    const { sub } = require("./sub.cjs");
+                    const { sub2 } = require("./sub-2"); // suffix inferred
+
+                    module.exports.msg = "cjs";
+                  `,
+                  "index.mjs": `
+                    import { sub } from "./sub.mjs";
+                    export const msg = "mjs";
+                  `,
+                  "sub.js": `
+                    module.exports.sub = "sub.js";
+                  `,
+                  "sub.cjs": `
+                    module.exports.sub = "sub.cjs";
+                  `,
+                  "sub.mjs": `
+                    export const sub = "sub.mjs";
+                  `,
+                  "sub-2.js": `
+                    module.exports.sub2 = "sub2.js";
+                  `
+                }
+              }
+            });
+          });
+
+          [
+            ["CJS static", "require.js"],
+            ["ESM static", "import.mjs"]
+          ].forEach(([name, srcPath]) => {
+            it(`handles ${name} imports`, async () => {
+              const { dependencies, misses } = await traceFile({ srcPath });
+
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/pkg/index.cjs",
+                "node_modules/pkg/index.js",
+                "node_modules/pkg/index.mjs",
+                "node_modules/pkg/package.json",
+                "node_modules/pkg/sub-2.js",
+                "node_modules/pkg/sub.cjs",
+                "node_modules/pkg/sub.js",
+                "node_modules/pkg/sub.mjs"
+              ]));
+              expect(misses).to.eql({});
+            });
+          });
+        });
+
         describe("no require export", () => {
           beforeEach(() => {
             createMock({
