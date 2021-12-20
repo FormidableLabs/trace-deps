@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.4.4
 
 * Bug: Do not apply `package.json:exports` resolution to relative local file imports.
   [#70](https://github.com/FormidableLabs/trace-deps/issues/70)
