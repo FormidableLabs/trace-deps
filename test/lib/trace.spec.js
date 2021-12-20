@@ -1889,10 +1889,14 @@ describe("lib/trace", () => {
                   }),
                   "index.js": `
                     const { sub } = require("./sub.js");
+                    const { sub2 } = require("./sub-2"); // suffix inferred
+
                     module.exports.msg = "js";
                   `,
                   "index.cjs": `
                     const { sub } = require("./sub.cjs");
+                    const { sub2 } = require("./sub-2"); // suffix inferred
+
                     module.exports.msg = "cjs";
                   `,
                   "index.mjs": `
@@ -1907,6 +1911,9 @@ describe("lib/trace", () => {
                   `,
                   "sub.mjs": `
                     export const sub = "sub.mjs";
+                  `,
+                  "sub-2.js": `
+                    module.exports.sub2 = "sub2.js";
                   `
                 }
               }
@@ -1925,6 +1932,7 @@ describe("lib/trace", () => {
                 "node_modules/pkg/index.js",
                 "node_modules/pkg/index.mjs",
                 "node_modules/pkg/package.json",
+                "node_modules/pkg/sub-2.js",
                 "node_modules/pkg/sub.cjs",
                 "node_modules/pkg/sub.js",
                 "node_modules/pkg/sub.mjs"
