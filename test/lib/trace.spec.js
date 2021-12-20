@@ -2809,21 +2809,25 @@ describe("lib/trace", () => {
       expect(misses).to.eql({});
     });
 
-    /* it("importing ./foo.mjs?query=1", async () => {
+    it("importing ./foo.mjs?query=1", async () => {
       mock({
         "hi.js": `
           import './foo.mjs?query=1';
           import './foo.mjs?query=2';
         `,
-        node_modules: {},
+        "foo.mjs": `
+              const one = () => "one";
+              
+              export default one;
+            `
       });
 
       const { dependencies, misses } = await traceFiles({
-        srcPaths: ["hi.js"],
+        srcPaths: ["hi.js"]
       });
 
-      expect(dependencies).to.eql([]);
+      expect(dependencies).to.eql(fullPaths(["foo.mjs"]));
       expect(misses).to.eql({});
-    });*/
+    });
   });
 });
