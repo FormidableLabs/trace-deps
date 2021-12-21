@@ -204,6 +204,7 @@ describe("lib/trace", () => {
         mock({
           "hi.js": `
             require("one");
+
             const { aFunction } = require("nested-first-level");
             const { aFile } = require("nested-trycatch-requireresolve");
           `,
@@ -236,6 +237,7 @@ describe("lib/trace", () => {
               lib: {
                 "index.js": `
                   const { aFunction } = require("nested-trycatch-require");
+
                   module.exports = {
                     aFunction
                   };
@@ -253,7 +255,9 @@ describe("lib/trace", () => {
                 } catch (err) {
                   aFunction = () => null;
                 }
+
                 const nested = require("doesnt-exist-nested/one/more.js");
+
                 module.exports = { aFunction };
               `
             },
@@ -266,6 +270,7 @@ describe("lib/trace", () => {
                 try {
                   noFile = require.resolve("also-doesnt-exist");
                 } catch (err) {}
+
                 module.exports = { noFile };
               `
             }
@@ -427,6 +432,7 @@ describe("lib/trace", () => {
             require("two");
             require(\`three\`);
             require("./ho");
+
             module.exports = 'hi';
             //# sourceMappingURL=hi.js.map
           `,
@@ -442,7 +448,9 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 module.exports = 'one';
+
                 //# sourceMappingURL=early/map-comment/should-be-ignored
+
                 //# sourceMappingURL=../one/index.not-map-suffix
               `,
               "index.jsbundle": "{\"not\":\"read\"}"
@@ -453,6 +461,7 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 module.exports = 'two';
+
                 /*# sourceMappingURL=ignore/block/version.js.map */
               `
             },
@@ -462,6 +471,7 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 module.exports = 'three';
+
                 //# sourceMappingURL=https://ignore.com/http/and/https/urls.js.map
               `
             }
@@ -527,6 +537,7 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 require("./lib/nested/deeper-one");
+
                 module.exports = {
                   one: () => "one",
                   two: () => require("two").two
@@ -648,11 +659,13 @@ describe("lib/trace", () => {
             const one = require("one");
             require("two");
             require(\`three\`);
+
             const variableDep = "shouldnt-find";
             require(variableDep);
             require(\`interpolated_\${variableDep}\`);
             require("binary" + "-expression");
             require("binary" + variableDep);
+
             const variableResolve = "also-shouldnt-find";
             require.resolve(variableResolve);
             require.resolve(\`interpolated_\${variableResolve}\`);
@@ -963,8 +976,10 @@ describe("lib/trace", () => {
           "hi.js": `
             const one = require("one");
             const dynamicTwo = () => import(\`two\`);
+
             (async () => {
               await import("three");
+
               const variableDep = "shouldnt-find";
               await import(variableDep);
               await import(variableResolve);
@@ -1034,8 +1049,10 @@ describe("lib/trace", () => {
           "hi.mjs": `
             import one from "one";
             const dynamicTwo = () => import("two");
+
             (async () => {
               await import("three");
+
               const variableDep = "shouldnt-find";
               await import(variableDep);
             })();
@@ -1101,6 +1118,7 @@ describe("lib/trace", () => {
           "hi.mjs": `
             import one from "one";
             const dynamicTwo = () => import("two");
+
             await import("three");
             const variableDep = "shouldnt-find";
             await import(variableDep);
@@ -1284,6 +1302,7 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 require("doesnt-exist");
+
                 module.exports = {
                   one: () => "one",
                   two: () => require("two").two
@@ -1341,6 +1360,7 @@ describe("lib/trace", () => {
               lib: {
                 "index.js": `
                   const { aFunction } = require("nested-trycatch-require");
+
                   module.exports = {
                     aFunction
                   };
@@ -1358,6 +1378,7 @@ describe("lib/trace", () => {
                 } catch (err) {
                   aFunction = () => null;
                 }
+
                 module.exports = { aFunction };
               `
             }
@@ -1394,6 +1415,7 @@ describe("lib/trace", () => {
                 const more = require("./more");
                 const variableDep = "shouldnt-find-one";
                 const fn = () => require(variableDep);
+
                 module.exports = 'one';
               `,
               "more.js": `
@@ -1426,6 +1448,7 @@ describe("lib/trace", () => {
                     require.resolve(\`interpolated_\${variableResolve}\`);
                     require.resolve("binary" + "-expression");
                     require.resolve("binary" + variableResolve);
+
                     module.exports = 'three-more-more!';
                   `
                 }
@@ -1519,7 +1542,9 @@ describe("lib/trace", () => {
         mock({
           "hi.js": `
             var foo = foo;
+
             function foo() { return "Wow, this is valid!"; }
+
             require("one");
           `,
           node_modules: {
@@ -1556,6 +1581,7 @@ describe("lib/trace", () => {
         mock({
           "hi.js": `
             require("one");
+
             class RequiredError extends Error {
               publicName = "RequiredError";
               publicRequire = require("two");
@@ -1567,6 +1593,7 @@ describe("lib/trace", () => {
               static staticRequire = {
                 objField: require("four")
               };
+
               constructor(field, msg) {
                 super(msg);
                 this.field = field;
@@ -1863,11 +1890,13 @@ describe("lib/trace", () => {
                   "index.js": `
                     const { sub } = require("./sub.js");
                     const { sub2 } = require("./sub-2"); // suffix inferred
+
                     module.exports.msg = "js";
                   `,
                   "index.cjs": `
                     const { sub } = require("./sub.cjs");
                     const { sub2 } = require("./sub-2"); // suffix inferred
+
                     module.exports.msg = "cjs";
                   `,
                   "index.mjs": `
@@ -2343,8 +2372,10 @@ describe("lib/trace", () => {
         `,
         "second.js": `
           const one = require.resolve("one");
+
           (async () => {
             await import("three");
+
             const variableDep = "shouldnt-find";
             await import(variableDep);
           })();
@@ -2411,8 +2442,10 @@ describe("lib/trace", () => {
         `,
         "second.mjs": `
           import one from "one";
+
           (async () => {
             await import("three");
+
             const variableDep = "shouldnt-find";
             await import(variableDep);
           })();
@@ -2481,6 +2514,7 @@ describe("lib/trace", () => {
         "ho.js": `
           const one = require("one");
           require("two")("my message for two");
+
           const variableDep = "shouldnt-find";
           require(variableDep)();
         `,
@@ -2570,6 +2604,7 @@ describe("lib/trace", () => {
               const more = require("./more");
               const variableDep = "shouldnt-find-one";
               const fn = () => require(variableDep);
+
               module.exports = 'one';
             `,
             "more.js": `
@@ -2602,6 +2637,7 @@ describe("lib/trace", () => {
                   require.resolve(\`interpolated_\${variableResolve}\`);
                   require.resolve("binary" + "-expression");
                   require.resolve("binary" + variableResolve);
+
                   module.exports = 'three-more-more!';
                 `
               }
@@ -2653,6 +2689,7 @@ describe("lib/trace", () => {
           const one = require("one");
           require("two");
           require(\`three\`);
+
           module.exports = 'hi';
           //# sourceMappingURL=hi.js.map
         `,
@@ -2668,7 +2705,9 @@ describe("lib/trace", () => {
             }),
             "index.js": `
               module.exports = 'one';
+
               //# sourceMappingURL=early/map-comment/should-be-ignored
+
               //@ sourceMappingURL=../one/index.not-map-suffix
             `,
             "index.jsbundle": "{\"not\":\"read\"}"
@@ -2679,6 +2718,7 @@ describe("lib/trace", () => {
             }),
             "index.js": `
               module.exports = 'two';
+
               /*# sourceMappingURL=ignore/block/version.js.map */
             `
           },
@@ -2688,6 +2728,7 @@ describe("lib/trace", () => {
             }),
             "index.js": `
               module.exports = 'three';
+
               //# sourceMappingURL=https://ignore.com/http/and/https/urls.js.map
             `
           }
@@ -2731,10 +2772,12 @@ describe("lib/trace", () => {
             }),
             "index.js": `
               require("http");
+
               let convert;
               try {
                 convert = require('encoding').convert;
               } catch (e) {}
+
               module.exports = 'node-fetch';
             `
           }
