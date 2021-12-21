@@ -12,46 +12,37 @@ const stringify = (val) => JSON.stringify(val, null, INDENT);
 const fullPaths = (paths) => paths.map((p) => path.resolve(p));
 
 // Resolve file paths in keys to OS-native.
-const resolveObjKeys = (obj) =>
-  Object.entries(obj)
-    .map(([key, val]) => [path.resolve(key), val])
-    .reduce((memo, [key, val]) => Object.assign(memo, { [key]: val }), {});
+const resolveObjKeys = (obj) => Object.entries(obj)
+  .map(([key, val]) => [path.resolve(key), val])
+  .reduce((memo, [key, val]) => Object.assign(memo, { [key]: val }), {});
 
 // Convert to map of sources.
-const missesMap = ({ misses }) =>
-  Object.entries(misses)
-    .map(([key, objs]) => {
-      // Test and mutate.
-      const srcs = objs.map((obj, i) => {
-        const msg = `Entry(${i}): ${key}, val: ${JSON.stringify(obj)}`;
+const missesMap = ({ misses }) => Object.entries(misses)
+  .map(([key, objs]) => {
+    // Test and mutate.
+    const srcs = objs.map((obj, i) => {
+      const msg = `Entry(${i}): ${key}, val: ${JSON.stringify(obj)}`;
 
-        // Everything has a type.
-        expect(obj, msg).to.include.keys("type");
+      // Everything has a type.
+      expect(obj, msg).to.include.keys("type");
 
-        if (obj.type === "dynamic") {
-          expect(obj, msg).to.have.keys("start", "end", "loc", "src", "type");
-          return obj.src;
-        } else if (obj.type === "static") {
-          expect(obj, msg).to.have.keys(
-            "dep",
-            "start",
-            "end",
-            "loc",
-            "src",
-            "type"
-          );
-          return obj.dep;
-        } else if (obj.type === "extra") {
-          expect(obj, msg).to.have.keys("dep", "type");
-          return obj.dep;
-        }
+      if (obj.type === "dynamic") {
+        expect(obj, msg).to.have.keys("start", "end", "loc", "src", "type");
+        return obj.src;
+      } else if (obj.type === "static") {
+        expect(obj, msg).to.have.keys("dep", "start", "end", "loc", "src", "type");
+        return obj.dep;
+      } else if (obj.type === "extra") {
+        expect(obj, msg).to.have.keys("dep", "type");
+        return obj.dep;
+      }
 
-        throw new Error(`Unknown object type: ${JSON.stringify(obj)}`);
-      });
+      throw new Error(`Unknown object type: ${JSON.stringify(obj)}`);
+    });
 
-      return [key, srcs];
-    })
-    .reduce((memo, [key, srcs]) => Object.assign(memo, { [key]: srcs }), {});
+    return [key, srcs];
+  })
+  .reduce((memo, [key, srcs]) => Object.assign(memo, { [key]: srcs }), {});
 
 describe("lib/trace", () => {
   beforeEach(() => {
@@ -81,7 +72,7 @@ describe("lib/trace", () => {
 
         await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
           "Encountered resolution error in hi.js for ./doesnt-exist: "
-            + "Error: Cannot find module './doesnt-exist' from '.'"
+          + "Error: Cannot find module './doesnt-exist' from '.'"
         );
       });
 
@@ -92,7 +83,7 @@ describe("lib/trace", () => {
 
         await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
           "Encountered resolution error in hi.js for /doesnt-exist: "
-            + "Error: Cannot find module '/doesnt-exist' from '.'"
+          + "Error: Cannot find module '/doesnt-exist' from '.'"
         );
       });
 
@@ -103,7 +94,7 @@ describe("lib/trace", () => {
 
         await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
           "Encountered resolution error in hi.js for doesnt-exist: "
-            + "Error: Cannot find module 'doesnt-exist' from '.'"
+          + "Error: Cannot find module 'doesnt-exist' from '.'"
         );
       });
 
@@ -121,7 +112,7 @@ describe("lib/trace", () => {
 
         await expect(traceFile({ srcPath: "hi.js" })).to.be.rejectedWith(
           "Encountered resolution error in hi.js for missing-file: "
-            + "Error: Cannot find module 'missing-file' from '.'"
+          + "Error: Cannot find module 'missing-file' from '.'"
         );
       });
 
@@ -131,22 +122,18 @@ describe("lib/trace", () => {
           "ho.js": "module.exports = 'ho';"
         });
 
-        await expect(
-          traceFile({
-            srcPath: "hi.js",
-            extraImports: {
-              // Absolute path, so application source file with **full match**
-              // Use win32 path.
-              [path.resolve("ho.js")]: ["extra-is-missing"]
-            }
-          })
-        ).to.be.rejectedWith(
-          `Encountered resolution error in ${path.resolve(
-            "ho.js"
-          )} for extra-is-missing: `
-            + `Error: Cannot find module 'extra-is-missing' from '${path.resolve(
-              "."
-            )}'`
+        await expect(traceFile({
+          srcPath: "hi.js",
+          extraImports: {
+            // Absolute path, so application source file with **full match**
+            // Use win32 path.
+            [path.resolve("ho.js")]: [
+              "extra-is-missing"
+            ]
+          }
+        })).to.be.rejectedWith(
+          `Encountered resolution error in ${path.resolve("ho.js")} for extra-is-missing: `
+          + `Error: Cannot find module 'extra-is-missing' from '${path.resolve(".")}'`
         );
       });
 
@@ -177,11 +164,11 @@ describe("lib/trace", () => {
         });
 
         expect(dependencies).to.eql(fullPaths([]));
-        expect(missesMap({ misses })).to.eql(
-          resolveObjKeys({
-            [srcPath]: ["doesnt-exist"]
-          })
-        );
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "doesnt-exist"
+          ]
+        }));
       });
 
       it("handles nonexistent extra dependency with bailOnMissing=false", async () => {
@@ -197,23 +184,26 @@ describe("lib/trace", () => {
           extraImports: {
             // Absolute path, so application source file with **full match**
             // Use win32 path.
-            [path.resolve("ho.js")]: ["extra-is-missing"]
+            [path.resolve("ho.js")]: [
+              "extra-is-missing"
+            ]
           }
         });
 
-        expect(dependencies).to.eql(fullPaths(["ho.js"]));
-        expect(missesMap({ misses })).to.eql(
-          resolveObjKeys({
-            "ho.js": ["extra-is-missing"]
-          })
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "ho.js"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          "ho.js": [
+            "extra-is-missing"
+          ]
+        }));
       });
 
       it("handles try/catch misses requires", async () => {
         mock({
           "hi.js": `
             require("one");
-
             const { aFunction } = require("nested-first-level");
             const { aFile } = require("nested-trycatch-requireresolve");
           `,
@@ -246,7 +236,6 @@ describe("lib/trace", () => {
               lib: {
                 "index.js": `
                   const { aFunction } = require("nested-trycatch-require");
-
                   module.exports = {
                     aFunction
                   };
@@ -264,9 +253,7 @@ describe("lib/trace", () => {
                 } catch (err) {
                   aFunction = () => null;
                 }
-
                 const nested = require("doesnt-exist-nested/one/more.js");
-
                 module.exports = { aFunction };
               `
             },
@@ -279,7 +266,6 @@ describe("lib/trace", () => {
                 try {
                   noFile = require.resolve("also-doesnt-exist");
                 } catch (err) {}
-
                 module.exports = { noFile };
               `
             }
@@ -293,23 +279,23 @@ describe("lib/trace", () => {
               "doesnt-exist",
               "doesnt-exist-nested/one"
             ],
-            "nested-trycatch-requireresolve": ["also-doesnt-exist"]
+            "nested-trycatch-requireresolve": [
+              "also-doesnt-exist"
+            ]
           }
         });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/nested-first-level/lib/index.js",
-            "node_modules/nested-first-level/package.json",
-            "node_modules/nested-trycatch-require/index.js",
-            "node_modules/nested-trycatch-require/package.json",
-            "node_modules/nested-trycatch-requireresolve/index.js",
-            "node_modules/nested-trycatch-requireresolve/package.json",
-            "node_modules/one/index.js",
-            "node_modules/one/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/nested-first-level/lib/index.js",
+          "node_modules/nested-first-level/package.json",
+          "node_modules/nested-trycatch-require/index.js",
+          "node_modules/nested-trycatch-require/package.json",
+          "node_modules/nested-trycatch-requireresolve/index.js",
+          "node_modules/nested-trycatch-requireresolve/package.json",
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -323,7 +309,9 @@ describe("lib/trace", () => {
         const { dependencies, misses } = await traceFile({
           srcPath: "entry.js",
           allowMissing: {
-            [path.resolve("entry.js")]: ["missing-pkg"]
+            [path.resolve("entry.js")]: [
+              "missing-pkg"
+            ]
           }
         });
         expect(dependencies).to.eql(fullPaths([]));
@@ -340,7 +328,9 @@ describe("lib/trace", () => {
         const { dependencies, misses } = await traceFile({
           srcPath: path.resolve("entry.js"),
           allowMissing: {
-            [path.resolve("entry.js")]: ["missing-pkg"]
+            [path.resolve("entry.js")]: [
+              "missing-pkg"
+            ]
           }
         });
         expect(dependencies).to.eql(fullPaths([]));
@@ -360,10 +350,14 @@ describe("lib/trace", () => {
         const { dependencies, misses } = await traceFile({
           srcPath: "entry.js",
           allowMissing: {
-            [path.resolve("nested.js")]: ["missing-pkg"]
+            [path.resolve("nested.js")]: [
+              "missing-pkg"
+            ]
           }
         });
-        expect(dependencies).to.eql(fullPaths(["nested.js"]));
+        expect(dependencies).to.eql(fullPaths([
+          "nested.js"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -402,7 +396,9 @@ describe("lib/trace", () => {
         const { dependencies, misses } = await traceFile({
           srcPath: "hi.js",
           allowMissing: {
-            pkg: ["missing"],
+            pkg: [
+              "missing"
+            ],
             "pkg/one.js": [
               "missing-in-one",
               "missing-in-one-with-path/path" // partial path
@@ -413,14 +409,12 @@ describe("lib/trace", () => {
             ]
           }
         });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/pkg/index.js",
-            "node_modules/pkg/nested/two.js",
-            "node_modules/pkg/one.js",
-            "node_modules/pkg/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/pkg/index.js",
+          "node_modules/pkg/nested/two.js",
+          "node_modules/pkg/one.js",
+          "node_modules/pkg/package.json"
+        ]));
         expect(misses).to.eql({});
       });
     });
@@ -433,7 +427,6 @@ describe("lib/trace", () => {
             require("two");
             require(\`three\`);
             require("./ho");
-
             module.exports = 'hi';
             //# sourceMappingURL=hi.js.map
           `,
@@ -449,9 +442,7 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 module.exports = 'one';
-
                 //# sourceMappingURL=early/map-comment/should-be-ignored
-
                 //# sourceMappingURL=../one/index.not-map-suffix
               `,
               "index.jsbundle": "{\"not\":\"read\"}"
@@ -462,7 +453,6 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 module.exports = 'two';
-
                 /*# sourceMappingURL=ignore/block/version.js.map */
               `
             },
@@ -472,7 +462,6 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 module.exports = 'three';
-
                 //# sourceMappingURL=https://ignore.com/http/and/https/urls.js.map
               `
             }
@@ -485,25 +474,21 @@ describe("lib/trace", () => {
           includeSourceMaps: true
         });
 
-        expect(sourceMaps).to.eql(
-          fullPaths([
-            "/ABS/PATH/ho.js.map",
-            "hi.js.map",
-            "node_modules/one/index.not-map-suffix"
-          ])
-        );
+        expect(sourceMaps).to.eql(fullPaths([
+          "/ABS/PATH/ho.js.map",
+          "hi.js.map",
+          "node_modules/one/index.not-map-suffix"
+        ]));
 
-        expect(dependencies).to.eql(
-          fullPaths([
-            "ho.js",
-            "node_modules/one/index.js",
-            "node_modules/one/package.json",
-            "node_modules/three/index.js",
-            "node_modules/three/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "ho.js",
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
 
         expect(missesMap({ misses })).to.eql(resolveObjKeys({}));
       });
@@ -542,7 +527,6 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 require("./lib/nested/deeper-one");
-
                 module.exports = {
                   one: () => "one",
                   two: () => require("two").two
@@ -608,40 +592,42 @@ describe("lib/trace", () => {
               "extra-pkg-app/nested/path"
             ],
             // Use posix path.
-            [path.resolve("./lib/middle/how.js")]: ["../extra/file2"],
+            [path.resolve("./lib/middle/how.js")]: [
+              "../extra/file2"
+            ],
             // Package, so relative match after _last_ `node_modules`.
-            "one/lib/nested/deeper-one.js": ["extra-pkg-one"],
+            "one/lib/nested/deeper-one.js": [
+              "extra-pkg-one"
+            ],
             // Package from the **above** extra import! Should also get traversed
             // same as the other ones...
-            "extra-pkg-one/index.js": ["extra-pkg-from-extra-import"]
+            "extra-pkg-one/index.js": [
+              "extra-pkg-from-extra-import"
+            ]
           }
         });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "lib/extra/file.js",
-            "lib/extra/file2.js",
-            "lib/middle/ho.js",
-            "lib/middle/how.js",
-            "node_modules/extra-pkg-app/nested/path.js",
-            "node_modules/extra-pkg-app/package.json",
-            "node_modules/extra-pkg-from-extra-import/index.js",
-            "node_modules/extra-pkg-from-extra-import/package.json",
-            "node_modules/extra-pkg-one/index.js",
-            "node_modules/extra-pkg-one/package.json",
-            "node_modules/one/index.js",
-            "node_modules/one/lib/nested/deeper-one.js",
-            "node_modules/one/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
-        expect(missesMap({ misses })).to.eql(
-          resolveObjKeys({
-            "node_modules/one/lib/nested/deeper-one.js": [
-              "require(process.env.MISSING_DYNAMIC_IMPORT)"
-            ]
-          })
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "lib/extra/file.js",
+          "lib/extra/file2.js",
+          "lib/middle/ho.js",
+          "lib/middle/how.js",
+          "node_modules/extra-pkg-app/nested/path.js",
+          "node_modules/extra-pkg-app/package.json",
+          "node_modules/extra-pkg-from-extra-import/index.js",
+          "node_modules/extra-pkg-from-extra-import/package.json",
+          "node_modules/extra-pkg-one/index.js",
+          "node_modules/extra-pkg-one/package.json",
+          "node_modules/one/index.js",
+          "node_modules/one/lib/nested/deeper-one.js",
+          "node_modules/one/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          "node_modules/one/lib/nested/deeper-one.js": [
+            "require(process.env.MISSING_DYNAMIC_IMPORT)"
+          ]
+        }));
       });
     });
 
@@ -662,13 +648,11 @@ describe("lib/trace", () => {
             const one = require("one");
             require("two");
             require(\`three\`);
-
             const variableDep = "shouldnt-find";
             require(variableDep);
             require(\`interpolated_\${variableDep}\`);
             require("binary" + "-expression");
             require("binary" + variableDep);
-
             const variableResolve = "also-shouldnt-find";
             require.resolve(variableResolve);
             require.resolve(\`interpolated_\${variableResolve}\`);
@@ -698,37 +682,31 @@ describe("lib/trace", () => {
         });
 
         const srcPath = "hi.js";
-        const { dependencies, sourceMaps, misses } = await traceFile({
-          srcPath
-        });
+        const { dependencies, sourceMaps, misses } = await traceFile({ srcPath });
 
         expect(sourceMaps).to.be.an("undefined");
 
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/one/index.js",
-            "node_modules/one/package.json",
-            "node_modules/three/index.js",
-            "node_modules/three/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
 
-        expect(missesMap({ misses })).to.eql(
-          resolveObjKeys({
-            [srcPath]: [
-              "require(variableDep)",
-              "require(`interpolated_${variableDep}`)",
-              "require(\"binary\" + \"-expression\")",
-              "require(\"binary\" + variableDep)",
-              "require.resolve(variableResolve)",
-              "require.resolve(`interpolated_${variableResolve}`)",
-              "require.resolve(\"binary\" + \"-expression\")",
-              "require.resolve(\"binary\" + variableResolve)"
-            ]
-          })
-        );
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "require(variableDep)",
+            "require(`interpolated_${variableDep}`)",
+            "require(\"binary\" + \"-expression\")",
+            "require(\"binary\" + variableDep)",
+            "require.resolve(variableResolve)",
+            "require.resolve(`interpolated_${variableResolve}`)",
+            "require.resolve(\"binary\" + \"-expression\")",
+            "require.resolve(\"binary\" + variableResolve)"
+          ]
+        }));
       });
 
       it("handles imports with .mjs", async () => {
@@ -768,16 +746,14 @@ describe("lib/trace", () => {
         });
 
         const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/one/index.mjs",
-            "node_modules/one/package.json",
-            "node_modules/three/index.mjs",
-            "node_modules/three/package.json",
-            "node_modules/two/index.mjs",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.mjs",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/package.json",
+          "node_modules/two/index.mjs",
+          "node_modules/two/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -825,18 +801,16 @@ describe("lib/trace", () => {
         });
 
         const { dependencies, misses } = await traceFile({ srcPath: "hi.mjs" });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/four/index.mjs",
-            "node_modules/four/package.json",
-            "node_modules/one/index.mjs",
-            "node_modules/one/package.json",
-            "node_modules/three/index.mjs",
-            "node_modules/three/package.json",
-            "node_modules/two/index.mjs",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/four/index.mjs",
+          "node_modules/four/package.json",
+          "node_modules/one/index.mjs",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/package.json",
+          "node_modules/two/index.mjs",
+          "node_modules/two/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -889,18 +863,16 @@ describe("lib/trace", () => {
         });
 
         const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/one/index.js",
-            "node_modules/one/node_modules/sub-dep-one/index.js",
-            "node_modules/one/node_modules/sub-dep-one/package.json",
-            "node_modules/one/package.json",
-            "node_modules/sub-dep-flattened-two/index.js",
-            "node_modules/sub-dep-flattened-two/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/node_modules/sub-dep-one/index.js",
+          "node_modules/one/node_modules/sub-dep-one/package.json",
+          "node_modules/one/package.json",
+          "node_modules/sub-dep-flattened-two/index.js",
+          "node_modules/sub-dep-flattened-two/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -969,22 +941,20 @@ describe("lib/trace", () => {
         });
 
         const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/one/index.js",
-            "node_modules/one/node_modules/sub-dep-one/a-json-file-implied-ext.json",
-            "node_modules/one/node_modules/sub-dep-one/a-json-file-with-ext.json",
-            "node_modules/one/node_modules/sub-dep-one/full-path-with-ext.cjs",
-            "node_modules/one/node_modules/sub-dep-one/index.cjs",
-            "node_modules/one/node_modules/sub-dep-one/package.json",
-            "node_modules/one/node_modules/sub-dep-one/path-with-no-ext",
-            "node_modules/one/package.json",
-            "node_modules/sub-dep-flattened-two/index.cjs",
-            "node_modules/sub-dep-flattened-two/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/node_modules/sub-dep-one/a-json-file-implied-ext.json",
+          "node_modules/one/node_modules/sub-dep-one/a-json-file-with-ext.json",
+          "node_modules/one/node_modules/sub-dep-one/full-path-with-ext.cjs",
+          "node_modules/one/node_modules/sub-dep-one/index.cjs",
+          "node_modules/one/node_modules/sub-dep-one/package.json",
+          "node_modules/one/node_modules/sub-dep-one/path-with-no-ext",
+          "node_modules/one/package.json",
+          "node_modules/sub-dep-flattened-two/index.cjs",
+          "node_modules/sub-dep-flattened-two/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -993,10 +963,8 @@ describe("lib/trace", () => {
           "hi.js": `
             const one = require("one");
             const dynamicTwo = () => import(\`two\`);
-
             (async () => {
               await import("three");
-
               const variableDep = "shouldnt-find";
               await import(variableDep);
               await import(variableResolve);
@@ -1040,29 +1008,25 @@ describe("lib/trace", () => {
 
         const srcPath = "hi.js";
         const { dependencies, misses } = await traceFile({ srcPath });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/one/index.js",
-            "node_modules/one/package.json",
-            "node_modules/three/index.mjs",
-            "node_modules/three/node_modules/nested-three/index.mjs",
-            "node_modules/three/node_modules/nested-three/package.json",
-            "node_modules/three/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
-        expect(missesMap({ misses })).to.eql(
-          resolveObjKeys({
-            [srcPath]: [
-              "import(variableDep)",
-              "import(variableResolve)",
-              "import(`interpolated_${variableDep}`)",
-              "import(\"binary\" + \"-expression\")",
-              "import(\"binary\" + variableDep)"
-            ]
-          })
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/node_modules/nested-three/index.mjs",
+          "node_modules/three/node_modules/nested-three/package.json",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "import(variableDep)",
+            "import(variableResolve)",
+            "import(`interpolated_${variableDep}`)",
+            "import(\"binary\" + \"-expression\")",
+            "import(\"binary\" + variableDep)"
+          ]
+        }));
       });
 
       it("handles dynamic imports with .mjs", async () => {
@@ -1070,10 +1034,8 @@ describe("lib/trace", () => {
           "hi.mjs": `
             import one from "one";
             const dynamicTwo = () => import("two");
-
             (async () => {
               await import("three");
-
               const variableDep = "shouldnt-find";
               await import(variableDep);
             })();
@@ -1117,23 +1079,21 @@ describe("lib/trace", () => {
 
         const srcPath = "hi.mjs";
         const { dependencies, misses } = await traceFile({ srcPath });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/nested-flattened-three/index.mjs",
-            "node_modules/nested-flattened-three/package.json",
-            "node_modules/one/index.mjs",
-            "node_modules/one/package.json",
-            "node_modules/three/index.mjs",
-            "node_modules/three/package.json",
-            "node_modules/two/index.mjs",
-            "node_modules/two/package.json"
-          ])
-        );
-        expect(missesMap({ misses })).to.eql(
-          resolveObjKeys({
-            [srcPath]: ["import(variableDep)"]
-          })
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/nested-flattened-three/index.mjs",
+          "node_modules/nested-flattened-three/package.json",
+          "node_modules/one/index.mjs",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/package.json",
+          "node_modules/two/index.mjs",
+          "node_modules/two/package.json"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "import(variableDep)"
+          ]
+        }));
       });
 
       it("handles top-level await imports with .mjs", async () => {
@@ -1141,7 +1101,6 @@ describe("lib/trace", () => {
           "hi.mjs": `
             import one from "one";
             const dynamicTwo = () => import("two");
-
             await import("three");
             const variableDep = "shouldnt-find";
             await import(variableDep);
@@ -1185,23 +1144,21 @@ describe("lib/trace", () => {
 
         const srcPath = "hi.mjs";
         const { dependencies, misses } = await traceFile({ srcPath });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/nested-flattened-three/index.mjs",
-            "node_modules/nested-flattened-three/package.json",
-            "node_modules/one/index.mjs",
-            "node_modules/one/package.json",
-            "node_modules/three/index.mjs",
-            "node_modules/three/package.json",
-            "node_modules/two/index.mjs",
-            "node_modules/two/package.json"
-          ])
-        );
-        expect(missesMap({ misses })).to.eql(
-          resolveObjKeys({
-            [srcPath]: ["import(variableDep)"]
-          })
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/nested-flattened-three/index.mjs",
+          "node_modules/nested-flattened-three/package.json",
+          "node_modules/one/index.mjs",
+          "node_modules/one/package.json",
+          "node_modules/three/index.mjs",
+          "node_modules/three/package.json",
+          "node_modules/two/index.mjs",
+          "node_modules/two/package.json"
+        ]));
+        expect(missesMap({ misses })).to.eql(resolveObjKeys({
+          [srcPath]: [
+            "import(variableDep)"
+          ]
+        }));
       });
 
       it("handles lower directories than where file is located", async () => {
@@ -1232,17 +1189,13 @@ describe("lib/trace", () => {
           }
         });
 
-        const { dependencies, misses } = await traceFile({
-          srcPath: "nested/path/hi.js"
-        });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "nested/node_modules/one/index.js",
-            "nested/node_modules/one/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        const { dependencies, misses } = await traceFile({ srcPath: "nested/path/hi.js" });
+        expect(dependencies).to.eql(fullPaths([
+          "nested/node_modules/one/index.js",
+          "nested/node_modules/one/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -1302,18 +1255,16 @@ describe("lib/trace", () => {
         });
 
         const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/four/index.js",
-            "node_modules/four/package.json",
-            "node_modules/one/index.js",
-            "node_modules/one/package.json",
-            "node_modules/three/index.js",
-            "node_modules/three/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/four/index.js",
+          "node_modules/four/package.json",
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -1333,7 +1284,6 @@ describe("lib/trace", () => {
               }),
               "index.js": `
                 require("doesnt-exist");
-
                 module.exports = {
                   one: () => "one",
                   two: () => require("two").two
@@ -1369,14 +1319,12 @@ describe("lib/trace", () => {
             "does-exist-shouldnt-import"
           ]
         });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/one/index.js",
-            "node_modules/one/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -1393,7 +1341,6 @@ describe("lib/trace", () => {
               lib: {
                 "index.js": `
                   const { aFunction } = require("nested-trycatch-require");
-
                   module.exports = {
                     aFunction
                   };
@@ -1411,25 +1358,22 @@ describe("lib/trace", () => {
                 } catch (err) {
                   aFunction = () => null;
                 }
-
                 module.exports = { aFunction };
               `
             }
           }
         });
 
-        await expect(
-          traceFile({
-            srcPath: "hi.js",
-            allowMissing: {
-              "nested-first-level": [
-                // This won't be a permitted missing because only
-                // `nested-trycatch-require` is checked.
-                "doesnt-exist"
-              ]
-            }
-          })
-        ).to.be.rejectedWith(
+        await expect(traceFile({
+          srcPath: "hi.js",
+          allowMissing: {
+            "nested-first-level": [
+              // This won't be a permitted missing because only
+              // `nested-trycatch-require` is checked.
+              "doesnt-exist"
+            ]
+          }
+        })).to.be.rejectedWith(
           /Encountered resolution error in .*nested-trycatch-require.* for doesnt-exist.*/
         );
       });
@@ -1450,7 +1394,6 @@ describe("lib/trace", () => {
                 const more = require("./more");
                 const variableDep = "shouldnt-find-one";
                 const fn = () => require(variableDep);
-
                 module.exports = 'one';
               `,
               "more.js": `
@@ -1483,7 +1426,6 @@ describe("lib/trace", () => {
                     require.resolve(\`interpolated_\${variableResolve}\`);
                     require.resolve("binary" + "-expression");
                     require.resolve("binary" + variableResolve);
-
                     module.exports = 'three-more-more!';
                   `
                 }
@@ -1494,37 +1436,35 @@ describe("lib/trace", () => {
 
         const srcPath = "hi.js";
         const { dependencies, misses } = await traceFile({ srcPath });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/one/index.js",
-            "node_modules/one/more.js",
-            "node_modules/one/package.json",
-            "node_modules/three/index.js",
-            "node_modules/three/node_modules/three-more/index.js",
-            "node_modules/three/node_modules/three-more/more.js",
-            "node_modules/three/node_modules/three-more/package.json",
-            "node_modules/three/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/more.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/node_modules/three-more/index.js",
+          "node_modules/three/node_modules/three-more/more.js",
+          "node_modules/three/node_modules/three-more/package.json",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
 
-        expect(missesMap({ misses })).to.be.eql(
-          resolveObjKeys({
-            "node_modules/one/index.js": ["require(variableDep)"],
-            "node_modules/one/more.js": [
-              "require(`interpolated_${variableDep}`)",
-              "require(\"binary\" + \"-expression\")",
-              "require(\"binary\" + variableDep)"
-            ],
-            "node_modules/three/node_modules/three-more/more.js": [
-              "require.resolve(variableResolve)",
-              "require.resolve(`interpolated_${variableResolve}`)",
-              "require.resolve(\"binary\" + \"-expression\")",
-              "require.resolve(\"binary\" + variableResolve)"
-            ]
-          })
-        );
+        expect(missesMap({ misses })).to.be.eql(resolveObjKeys({
+          "node_modules/one/index.js": [
+            "require(variableDep)"
+          ],
+          "node_modules/one/more.js": [
+            "require(`interpolated_${variableDep}`)",
+            "require(\"binary\" + \"-expression\")",
+            "require(\"binary\" + variableDep)"
+          ],
+          "node_modules/three/node_modules/three-more/more.js": [
+            "require.resolve(variableResolve)",
+            "require.resolve(`interpolated_${variableResolve}`)",
+            "require.resolve(\"binary\" + \"-expression\")",
+            "require.resolve(\"binary\" + variableResolve)"
+          ]
+        }));
       });
 
       it("handles missing package.json:main and index.json", async () => {
@@ -1540,32 +1480,38 @@ describe("lib/trace", () => {
               "package.json": stringify({
                 main: "index.json"
               }),
-              "index.json": JSON.stringify(["one", "1"])
+              "index.json": JSON.stringify([
+                "one",
+                "1"
+              ])
             },
             // `resolve()` **can't** handle this.
             two: {
-              "package.json": stringify({}),
-              "index.json": JSON.stringify(["two", "2"])
+              "package.json": stringify({
+              }),
+              "index.json": JSON.stringify([
+                "two",
+                "2"
+              ])
             },
             // `resolve()` can handle this straight up.
             three: {
-              "package.json": stringify({}),
+              "package.json": stringify({
+              }),
               "index.js": "module.exports = 'three';"
             }
           }
         });
 
         const { dependencies, misses } = await traceFile({ srcPath: "hi.js" });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/one/index.json",
-            "node_modules/one/package.json",
-            "node_modules/three/index.js",
-            "node_modules/three/package.json",
-            "node_modules/two/index.json",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.json",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.json",
+          "node_modules/two/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
@@ -1573,9 +1519,7 @@ describe("lib/trace", () => {
         mock({
           "hi.js": `
             var foo = foo;
-
             function foo() { return "Wow, this is valid!"; }
-
             require("one");
           `,
           node_modules: {
@@ -1592,12 +1536,10 @@ describe("lib/trace", () => {
 
         const srcPath = "hi.js";
         const { dependencies, misses } = await traceFile({ srcPath });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/one/index.js",
-            "node_modules/one/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json"
+        ]));
 
         expect(missesMap({ misses })).to.be.eql({});
       });
@@ -1614,7 +1556,6 @@ describe("lib/trace", () => {
         mock({
           "hi.js": `
             require("one");
-
             class RequiredError extends Error {
               publicName = "RequiredError";
               publicRequire = require("two");
@@ -1626,7 +1567,6 @@ describe("lib/trace", () => {
               static staticRequire = {
                 objField: require("four")
               };
-
               constructor(field, msg) {
                 super(msg);
                 this.field = field;
@@ -1671,18 +1611,16 @@ describe("lib/trace", () => {
 
         const srcPath = "hi.js";
         const { dependencies, misses } = await traceFile({ srcPath });
-        expect(dependencies).to.eql(
-          fullPaths([
-            "node_modules/four/index.js",
-            "node_modules/four/package.json",
-            "node_modules/one/index.js",
-            "node_modules/one/package.json",
-            "node_modules/three/index.js",
-            "node_modules/three/package.json",
-            "node_modules/two/index.js",
-            "node_modules/two/package.json"
-          ])
-        );
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/four/index.js",
+          "node_modules/four/package.json",
+          "node_modules/one/index.js",
+          "node_modules/one/package.json",
+          "node_modules/three/index.js",
+          "node_modules/three/package.json",
+          "node_modules/two/index.js",
+          "node_modules/two/package.json"
+        ]));
 
         expect(missesMap({ misses })).to.be.eql({});
       });
@@ -1693,18 +1631,17 @@ describe("lib/trace", () => {
       // https://unpkg.com/browse/es-get-iterator@1.1.2/package.json
       // Notably CJS does _different_ things in legacy vs modern CJS.
       describe("complicated exports", () => {
-        const createMock = ({ pkg, pkgFn = (p) => p, srcs } = {}) =>
-          mock({
-            "require.js": `
+        const createMock = ({ pkg, pkgFn = (p) => p, srcs } = {}) => mock({
+          "require.js": `
             const its = require("complicated");
             const itsPkg = require("complicated/package");
           `,
-            "import.mjs": `
+          "import.mjs": `
             import its from "complicated";
             import itsPkg from "complicated/package";
             import fs from "fs"; // core package
           `,
-            "dynamic-import.js": `
+          "dynamic-import.js": `
             (async () => {
               let its = "Dynamic import unsupported";
               try {
@@ -1712,7 +1649,7 @@ describe("lib/trace", () => {
               } catch (e) {}
             })();
           `,
-            "dynamic-import.mjs": `
+          "dynamic-import.mjs": `
             (async () => {
               let its = "Dynamic import unsupported";
               try {
@@ -1720,80 +1657,71 @@ describe("lib/trace", () => {
               } catch (e) {}
             })();
           `,
-            ...srcs,
-            node_modules: {
-              complicated: {
-                "package.json": stringify(
-                  pkgFn({
-                    name: "complicated",
-                    main: "main.js",
-                    ...pkg
-                  })
-                ),
-                "main.js":
-                  "require('subdep/from-main'); module.exports = 'main';",
-                "browser.js": "module.exports = 'browser';",
-                "development.js": "module.exports = 'development';",
-                "production.mjs":
-                  "const msg = 'production'; export default msg;",
-                "import.mjs": `
+          ...srcs,
+          node_modules: {
+            complicated: {
+              "package.json": stringify(pkgFn({
+                name: "complicated",
+                main: "main.js",
+                ...pkg
+              })),
+              "main.js": "require('subdep/from-main'); module.exports = 'main';",
+              "browser.js": "module.exports = 'browser';",
+              "development.js": "module.exports = 'development';",
+              "production.mjs": "const msg = 'production'; export default msg;",
+              "import.mjs": `
                 import 'subdep';
                 import './local/two.mjs';
                 const msg = 'import';
                 export default msg;
               `,
-                "require.js": `
+              "require.js": `
                 require('subdep/from-require');
                 require("./local/one");
                 module.exports = 'require';
               `,
-                "default.js":
-                  "require('subdep/from-default'); module.exports = 'default';",
-                "fallback.js": "module.exports = 'fallback';",
-                // These are _not_ exported, but locally referred to
-                local: {
-                  "one.js": "module.exports = 'local/one';",
-                  "two.mjs": "const msg = 'two.mjs'; export default msg;"
-                },
-                sub1: {
-                  "index.js": "module.exports = 'sub1/index.js';",
-                  "index.cjs": "module.exports = 'sub1/index.cjs';",
-                  "index.mjs":
-                    "const msg = 'sub1/index.mjs'; export default msg;"
-                },
-                sub2: {
-                  "index.cjs": "module.exports = 'sub2/index.cjs';",
-                  "index.mjs":
-                    "const msg = 'sub2/index.mjs'; export default msg;",
-                  "another.cjs": "module.exports = 'sub2/another.cjs';",
-                  "another.mjs":
-                    "const msg = 'sub2/another.mjs'; export default msg;"
-                }
+              "default.js": "require('subdep/from-default'); module.exports = 'default';",
+              "fallback.js": "module.exports = 'fallback';",
+              // These are _not_ exported, but locally referred to
+              local: {
+                "one.js": "module.exports = 'local/one';",
+                "two.mjs": "const msg = 'two.mjs'; export default msg;"
               },
-              subdep: {
-                "package.json": stringify({
-                  name: "subdep",
-                  main: "main.js",
-                  exports: {
-                    ".": {
-                      "import": "./import.mjs",
-                      "default": "./default.js"
-                    },
-                    "./from-import": "./from-import.mjs",
-                    "./package.json": "./package.json"
-                  }
-                }),
-                "main.js": "module.exports = 'main';",
-                "import.mjs": "const msg = 'import'; export default msg;",
-                "default.js": "module.exports = 'default';",
-                "from-main.js": "module.exports = 'from-main';",
-                "from-import.mjs":
-                  "const msg = 'from import'; export default msg;",
-                "from-require.js": "module.exports = 'from-require';",
-                "from-default.js": "module.exports = 'from-default';"
+              sub1: {
+                "index.js": "module.exports = 'sub1/index.js';",
+                "index.cjs": "module.exports = 'sub1/index.cjs';",
+                "index.mjs": "const msg = 'sub1/index.mjs'; export default msg;"
+              },
+              sub2: {
+                "index.cjs": "module.exports = 'sub2/index.cjs';",
+                "index.mjs": "const msg = 'sub2/index.mjs'; export default msg;",
+                "another.cjs": "module.exports = 'sub2/another.cjs';",
+                "another.mjs": "const msg = 'sub2/another.mjs'; export default msg;"
               }
+            },
+            subdep: {
+              "package.json": stringify({
+                name: "subdep",
+                main: "main.js",
+                exports: {
+                  ".": {
+                    "import": "./import.mjs",
+                    "default": "./default.js"
+                  },
+                  "./from-import": "./from-import.mjs",
+                  "./package.json": "./package.json"
+                }
+              }),
+              "main.js": "module.exports = 'main';",
+              "import.mjs": "const msg = 'import'; export default msg;",
+              "default.js": "module.exports = 'default';",
+              "from-main.js": "module.exports = 'from-main';",
+              "from-import.mjs": "const msg = 'from import'; export default msg;",
+              "from-require.js": "module.exports = 'from-require';",
+              "from-default.js": "module.exports = 'from-default';"
             }
-          });
+          }
+        });
 
         describe("no exports", () => {
           beforeEach(() => {
@@ -1809,14 +1737,12 @@ describe("lib/trace", () => {
             it(`handles ${name} imports`, async () => {
               const { dependencies, misses } = await traceFile({ srcPath });
 
-              expect(dependencies).to.eql(
-                fullPaths([
-                  "node_modules/complicated/main.js",
-                  "node_modules/complicated/package.json",
-                  "node_modules/subdep/from-main.js",
-                  "node_modules/subdep/package.json"
-                ])
-              );
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/main.js",
+                "node_modules/complicated/package.json",
+                "node_modules/subdep/from-main.js",
+                "node_modules/subdep/package.json"
+              ]));
               expect(misses).to.eql({});
             });
           });
@@ -1843,14 +1769,12 @@ describe("lib/trace", () => {
             it(`handles ${name} imports`, async () => {
               const { dependencies, misses } = await traceFile({ srcPath });
 
-              expect(dependencies).to.eql(
-                fullPaths([
-                  "node_modules/complicated/main.js",
-                  "node_modules/complicated/package.json",
-                  "node_modules/subdep/from-main.js",
-                  "node_modules/subdep/package.json"
-                ])
-              );
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/main.js",
+                "node_modules/complicated/package.json",
+                "node_modules/subdep/from-main.js",
+                "node_modules/subdep/package.json"
+              ]));
               expect(misses).to.eql({});
             });
           });
@@ -1904,13 +1828,86 @@ describe("lib/trace", () => {
             it(`handles ${name} imports`, async () => {
               const { dependencies, misses } = await traceFile({ srcPath });
 
-              expect(dependencies).to.eql(
-                fullPaths([
-                  "node_modules/pkg/lib/context.js",
-                  "node_modules/pkg/lib/index.js",
-                  "node_modules/pkg/package.json"
-                ])
-              );
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/pkg/lib/context.js",
+                "node_modules/pkg/lib/index.js",
+                "node_modules/pkg/package.json"
+              ]));
+              expect(misses).to.eql({});
+            });
+          });
+        });
+
+        // Regression for: https://github.com/FormidableLabs/trace-deps/issues/70
+        describe("suffixed .mjs/.js/.cjs local paths with wildcards", () => {
+          beforeEach(() => {
+            mock({
+              "require.js": `
+                const pkg = require("pkg/index"); // => pkg/index.cjs
+              `,
+              "import.mjs": `
+                import pkg from "pkg/index"; // => pkg/index.mjs
+              `,
+              node_modules: {
+                pkg: {
+                  "package.json": stringify({
+                    name: "pkg",
+                    main: "index.js",
+                    exports: {
+                      "./*": {
+                        require: "./*.cjs",
+                        "import": "./*.mjs"
+                      }
+                    }
+                  }),
+                  "index.js": `
+                    const { sub } = require("./sub.js");
+                    const { sub2 } = require("./sub-2"); // suffix inferred
+                    module.exports.msg = "js";
+                  `,
+                  "index.cjs": `
+                    const { sub } = require("./sub.cjs");
+                    const { sub2 } = require("./sub-2"); // suffix inferred
+                    module.exports.msg = "cjs";
+                  `,
+                  "index.mjs": `
+                    import { sub } from "./sub.mjs";
+                    export const msg = "mjs";
+                  `,
+                  "sub.js": `
+                    module.exports.sub = "sub.js";
+                  `,
+                  "sub.cjs": `
+                    module.exports.sub = "sub.cjs";
+                  `,
+                  "sub.mjs": `
+                    export const sub = "sub.mjs";
+                  `,
+                  "sub-2.js": `
+                    module.exports.sub2 = "sub2.js";
+                  `
+                }
+              }
+            });
+          });
+
+          [
+            ["CJS static", "require.js"],
+            ["ESM static", "import.mjs"]
+          ].forEach(([name, srcPath]) => {
+            it(`handles ${name} imports`, async () => {
+              const { dependencies, misses } = await traceFile({ srcPath });
+
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/pkg/index.cjs",
+                "node_modules/pkg/index.js",
+                "node_modules/pkg/index.mjs",
+                "node_modules/pkg/package.json",
+                "node_modules/pkg/sub-2.js",
+                "node_modules/pkg/sub.cjs",
+                "node_modules/pkg/sub.js",
+                "node_modules/pkg/sub.mjs"
+              ]));
               expect(misses).to.eql({});
             });
           });
@@ -1947,23 +1944,21 @@ describe("lib/trace", () => {
             it(`handles ${name} imports`, async () => {
               const { dependencies, misses } = await traceFile({ srcPath });
 
-              expect(dependencies).to.eql(
-                fullPaths([
-                  "node_modules/complicated/default.js",
-                  "node_modules/complicated/development.js",
-                  "node_modules/complicated/import.mjs",
-                  "node_modules/complicated/local/two.mjs",
-                  "node_modules/complicated/main.js",
-                  "node_modules/complicated/package.json",
-                  "node_modules/complicated/production.mjs",
-                  "node_modules/subdep/default.js",
-                  "node_modules/subdep/from-default.js",
-                  "node_modules/subdep/from-main.js",
-                  "node_modules/subdep/import.mjs",
-                  "node_modules/subdep/main.js",
-                  "node_modules/subdep/package.json"
-                ])
-              );
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/default.js",
+                "node_modules/complicated/development.js",
+                "node_modules/complicated/import.mjs",
+                "node_modules/complicated/local/two.mjs",
+                "node_modules/complicated/main.js",
+                "node_modules/complicated/package.json",
+                "node_modules/complicated/production.mjs",
+                "node_modules/subdep/default.js",
+                "node_modules/subdep/from-default.js",
+                "node_modules/subdep/from-main.js",
+                "node_modules/subdep/import.mjs",
+                "node_modules/subdep/main.js",
+                "node_modules/subdep/package.json"
+              ]));
               expect(misses).to.eql({});
             });
           });
@@ -2000,23 +1995,21 @@ describe("lib/trace", () => {
             it(`handles ${name} imports`, async () => {
               const { dependencies, misses } = await traceFile({ srcPath });
 
-              expect(dependencies).to.eql(
-                fullPaths([
-                  "node_modules/complicated/default.js",
-                  "node_modules/complicated/development.js",
-                  "node_modules/complicated/local/one.js",
-                  "node_modules/complicated/main.js",
-                  "node_modules/complicated/package.json",
-                  "node_modules/complicated/production.mjs",
-                  "node_modules/complicated/require.js",
-                  // Note: All of the import paths are to sub-paths, and **not**
-                  // the root package, so no defaults in play.
-                  "node_modules/subdep/from-default.js",
-                  "node_modules/subdep/from-main.js",
-                  "node_modules/subdep/from-require.js",
-                  "node_modules/subdep/package.json"
-                ])
-              );
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/default.js",
+                "node_modules/complicated/development.js",
+                "node_modules/complicated/local/one.js",
+                "node_modules/complicated/main.js",
+                "node_modules/complicated/package.json",
+                "node_modules/complicated/production.mjs",
+                "node_modules/complicated/require.js",
+                // Note: All of the import paths are to sub-paths, and **not**
+                // the root package, so no defaults in play.
+                "node_modules/subdep/from-default.js",
+                "node_modules/subdep/from-main.js",
+                "node_modules/subdep/from-require.js",
+                "node_modules/subdep/package.json"
+              ]));
               expect(misses).to.eql({});
             });
           });
@@ -2089,16 +2082,14 @@ describe("lib/trace", () => {
             it(`handles ${name} imports`, async () => {
               const { dependencies, misses } = await traceFile({ srcPath });
 
-              expect(dependencies).to.eql(
-                fullPaths([
-                  "node_modules/complicated/package.json",
-                  "node_modules/complicated/sub1/index.cjs",
-                  "node_modules/complicated/sub1/index.js",
-                  "node_modules/complicated/sub1/index.mjs",
-                  "node_modules/complicated/sub2/another.cjs",
-                  "node_modules/complicated/sub2/another.mjs"
-                ])
-              );
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/package.json",
+                "node_modules/complicated/sub1/index.cjs",
+                "node_modules/complicated/sub1/index.js",
+                "node_modules/complicated/sub1/index.mjs",
+                "node_modules/complicated/sub2/another.cjs",
+                "node_modules/complicated/sub2/another.mjs"
+              ]));
               expect(misses).to.eql({});
             });
           });
@@ -2142,22 +2133,20 @@ describe("lib/trace", () => {
             it(`handles ${name} imports`, async () => {
               const { dependencies, misses } = await traceFile({ srcPath });
 
-              expect(dependencies).to.eql(
-                fullPaths([
-                  "node_modules/complicated/development.js",
-                  "node_modules/complicated/import.mjs",
-                  "node_modules/complicated/local/one.js",
-                  "node_modules/complicated/local/two.mjs",
-                  "node_modules/complicated/package.json",
-                  "node_modules/complicated/production.mjs",
-                  "node_modules/complicated/require.js",
-                  "node_modules/subdep/default.js",
-                  "node_modules/subdep/from-require.js",
-                  "node_modules/subdep/import.mjs",
-                  "node_modules/subdep/main.js",
-                  "node_modules/subdep/package.json"
-                ])
-              );
+              expect(dependencies).to.eql(fullPaths([
+                "node_modules/complicated/development.js",
+                "node_modules/complicated/import.mjs",
+                "node_modules/complicated/local/one.js",
+                "node_modules/complicated/local/two.mjs",
+                "node_modules/complicated/package.json",
+                "node_modules/complicated/production.mjs",
+                "node_modules/complicated/require.js",
+                "node_modules/subdep/default.js",
+                "node_modules/subdep/from-require.js",
+                "node_modules/subdep/import.mjs",
+                "node_modules/subdep/main.js",
+                "node_modules/subdep/package.json"
+              ]));
               expect(misses).to.eql({});
             });
           });
@@ -2190,8 +2179,8 @@ describe("lib/trace", () => {
             it(`throws on ${name} imports`, async () => {
               await expect(traceFile({ srcPath })).to.be.rejectedWith(
                 `Encountered resolution error in ${srcPath} for complicated: `
-                  + "Error: Cannot find export './doesnt-exist.mjs' in module "
-                  + "'complicated' from '.'"
+                + "Error: Cannot find export './doesnt-exist.mjs' in module "
+                + "'complicated' from '.'"
               );
             });
           });
@@ -2250,15 +2239,13 @@ describe("lib/trace", () => {
           it(`handles ${name} imports`, async () => {
             const { dependencies, misses } = await traceFile({ srcPath });
 
-            expect(dependencies).to.eql(
-              fullPaths([
-                "node_modules/nomain/dist/one.js",
-                "node_modules/nomain/dist/sub/one.js",
-                "node_modules/nomain/dist/sub/two.js",
-                "node_modules/nomain/dist/sub/two.mjs",
-                "node_modules/nomain/package.json"
-              ])
-            );
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/nomain/dist/one.js",
+              "node_modules/nomain/dist/sub/one.js",
+              "node_modules/nomain/dist/sub/two.js",
+              "node_modules/nomain/dist/sub/two.mjs",
+              "node_modules/nomain/package.json"
+            ]));
             expect(misses).to.eql({});
           });
         });
@@ -2317,15 +2304,13 @@ describe("lib/trace", () => {
           it(`handles ${name} imports`, async () => {
             const { dependencies, misses } = await traceFile({ srcPath });
 
-            expect(dependencies).to.eql(
-              fullPaths([
-                "node_modules/@scope/nomain/dist/one.js",
-                "node_modules/@scope/nomain/dist/sub/one.js",
-                "node_modules/@scope/nomain/dist/sub/two.js",
-                "node_modules/@scope/nomain/dist/sub/two.mjs",
-                "node_modules/@scope/nomain/package.json"
-              ])
-            );
+            expect(dependencies).to.eql(fullPaths([
+              "node_modules/@scope/nomain/dist/one.js",
+              "node_modules/@scope/nomain/dist/sub/one.js",
+              "node_modules/@scope/nomain/dist/sub/two.js",
+              "node_modules/@scope/nomain/dist/sub/two.mjs",
+              "node_modules/@scope/nomain/package.json"
+            ]));
             expect(misses).to.eql({});
           });
         });
@@ -2345,9 +2330,7 @@ describe("lib/trace", () => {
         "hi.js": "module.exports = 'hi';"
       });
 
-      const { dependencies, misses } = await traceFiles({
-        srcPaths: ["hi.js"]
-      });
+      const { dependencies, misses } = await traceFiles({ srcPaths: ["hi.js"] });
       expect(dependencies).to.eql([]);
       expect(misses).to.eql({});
     });
@@ -2360,10 +2343,8 @@ describe("lib/trace", () => {
         `,
         "second.js": `
           const one = require.resolve("one");
-
           (async () => {
             await import("three");
-
             const variableDep = "shouldnt-find";
             await import(variableDep);
           })();
@@ -2401,26 +2382,25 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, misses } = await traceFiles({
-        srcPaths: ["first.js", "second.js"]
-      });
-      expect(dependencies).to.eql(
-        fullPaths([
-          "node_modules/one/index.js",
-          "node_modules/one/package.json",
-          "node_modules/three/index.mjs",
-          "node_modules/three/node_modules/nested-three/index.mjs",
-          "node_modules/three/node_modules/nested-three/package.json",
-          "node_modules/three/package.json",
-          "node_modules/two/index.js",
-          "node_modules/two/package.json"
-        ])
-      );
-      expect(missesMap({ misses })).to.eql(
-        resolveObjKeys({
-          "second.js": ["import(variableDep)"]
-        })
-      );
+      const { dependencies, misses } = await traceFiles({ srcPaths: [
+        "first.js",
+        "second.js"
+      ] });
+      expect(dependencies).to.eql(fullPaths([
+        "node_modules/one/index.js",
+        "node_modules/one/package.json",
+        "node_modules/three/index.mjs",
+        "node_modules/three/node_modules/nested-three/index.mjs",
+        "node_modules/three/node_modules/nested-three/package.json",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        "second.js": [
+          "import(variableDep)"
+        ]
+      }));
     });
 
     it("handles dynamic imports with .mjs", async () => {
@@ -2431,10 +2411,8 @@ describe("lib/trace", () => {
         `,
         "second.mjs": `
           import one from "one";
-
           (async () => {
             await import("three");
-
             const variableDep = "shouldnt-find";
             await import(variableDep);
           })();
@@ -2476,26 +2454,25 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, misses } = await traceFiles({
-        srcPaths: ["first.mjs", "second.mjs"]
-      });
-      expect(dependencies).to.eql(
-        fullPaths([
-          "node_modules/nested-flattened-three/index.mjs",
-          "node_modules/nested-flattened-three/package.json",
-          "node_modules/one/index.mjs",
-          "node_modules/one/package.json",
-          "node_modules/three/index.mjs",
-          "node_modules/three/package.json",
-          "node_modules/two/index.mjs",
-          "node_modules/two/package.json"
-        ])
-      );
-      expect(missesMap({ misses })).to.eql(
-        resolveObjKeys({
-          "second.mjs": ["import(variableDep)"]
-        })
-      );
+      const { dependencies, misses } = await traceFiles({ srcPaths: [
+        "first.mjs",
+        "second.mjs"
+      ] });
+      expect(dependencies).to.eql(fullPaths([
+        "node_modules/nested-flattened-three/index.mjs",
+        "node_modules/nested-flattened-three/package.json",
+        "node_modules/one/index.mjs",
+        "node_modules/one/package.json",
+        "node_modules/three/index.mjs",
+        "node_modules/three/package.json",
+        "node_modules/two/index.mjs",
+        "node_modules/two/package.json"
+      ]));
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        "second.mjs": [
+          "import(variableDep)"
+        ]
+      }));
     });
 
     it("handles requires with arguments and local libs", async () => {
@@ -2504,7 +2481,6 @@ describe("lib/trace", () => {
         "ho.js": `
           const one = require("one");
           require("two")("my message for two");
-
           const variableDep = "shouldnt-find";
           require(variableDep)();
         `,
@@ -2531,8 +2507,7 @@ describe("lib/trace", () => {
               // https://github.com/FormidableLabs/trace-deps/issues/13
               "index.js": "module.exports = 'another one';",
               "package.json": stringify({
-                description:
-                  "should be not included because it points to a bad path",
+                description: "should be not included because it points to a bad path",
                 main: "bad-path.js"
               })
             },
@@ -2540,8 +2515,7 @@ describe("lib/trace", () => {
               // Should use _diff-path_ and include package.json
               "diff-path.js": "module.exports = 'one more';",
               "package.json": stringify({
-                description:
-                  "should be included because it points to a good path",
+                description: "should be included because it points to a good path",
                 main: "diff-path.js"
               })
             }
@@ -2555,28 +2529,24 @@ describe("lib/trace", () => {
         }
       });
 
-      const { dependencies, misses } = await traceFiles({
-        srcPaths: ["hi.js"]
-      });
-      expect(dependencies).to.eql(
-        fullPaths([
-          "ho.js",
-          "node_modules/one/and-more/diff-path.js",
-          "node_modules/one/and-more/package.json",
-          "node_modules/one/another-one/index.js",
-          "node_modules/one/another-one/package.json",
-          "node_modules/one/index.js",
-          "node_modules/one/package.json",
-          "node_modules/two/index.js",
-          "node_modules/two/package.json",
-          "package.json"
-        ])
-      );
-      expect(missesMap({ misses })).to.eql(
-        resolveObjKeys({
-          "ho.js": ["require(variableDep)"]
-        })
-      );
+      const { dependencies, misses } = await traceFiles({ srcPaths: ["hi.js"] });
+      expect(dependencies).to.eql(fullPaths([
+        "ho.js",
+        "node_modules/one/and-more/diff-path.js",
+        "node_modules/one/and-more/package.json",
+        "node_modules/one/another-one/index.js",
+        "node_modules/one/another-one/package.json",
+        "node_modules/one/index.js",
+        "node_modules/one/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json",
+        "package.json"
+      ]));
+      expect(missesMap({ misses })).to.eql(resolveObjKeys({
+        "ho.js": [
+          "require(variableDep)"
+        ]
+      }));
     });
 
     it("reports on complex, nested misses", async () => {
@@ -2600,7 +2570,6 @@ describe("lib/trace", () => {
               const more = require("./more");
               const variableDep = "shouldnt-find-one";
               const fn = () => require(variableDep);
-
               module.exports = 'one';
             `,
             "more.js": `
@@ -2633,7 +2602,6 @@ describe("lib/trace", () => {
                   require.resolve(\`interpolated_\${variableResolve}\`);
                   require.resolve("binary" + "-expression");
                   require.resolve("binary" + variableResolve);
-
                   module.exports = 'three-more-more!';
                 `
               }
@@ -2642,40 +2610,41 @@ describe("lib/trace", () => {
         }
       });
 
-      const srcPaths = ["first.js", "second.js"];
+      const srcPaths = [
+        "first.js",
+        "second.js"
+      ];
       const { dependencies, misses } = await traceFiles({ srcPaths });
-      expect(dependencies).to.eql(
-        fullPaths([
-          "node_modules/one/index.js",
-          "node_modules/one/more.js",
-          "node_modules/one/package.json",
-          "node_modules/three/index.js",
-          "node_modules/three/node_modules/three-more/index.js",
-          "node_modules/three/node_modules/three-more/more.js",
-          "node_modules/three/node_modules/three-more/package.json",
-          "node_modules/three/package.json",
-          "node_modules/two/index.js",
-          "node_modules/two/package.json",
-          "root-more.js"
-        ])
-      );
+      expect(dependencies).to.eql(fullPaths([
+        "node_modules/one/index.js",
+        "node_modules/one/more.js",
+        "node_modules/one/package.json",
+        "node_modules/three/index.js",
+        "node_modules/three/node_modules/three-more/index.js",
+        "node_modules/three/node_modules/three-more/more.js",
+        "node_modules/three/node_modules/three-more/package.json",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json",
+        "root-more.js"
+      ]));
 
-      expect(missesMap({ misses })).to.be.eql(
-        resolveObjKeys({
-          "node_modules/one/index.js": ["require(variableDep)"],
-          "node_modules/one/more.js": [
-            "require(`interpolated_${variableDep}`)",
-            "require(\"binary\" + \"-expression\")",
-            "require(\"binary\" + variableDep)"
-          ],
-          "node_modules/three/node_modules/three-more/more.js": [
-            "require.resolve(variableResolve)",
-            "require.resolve(`interpolated_${variableResolve}`)",
-            "require.resolve(\"binary\" + \"-expression\")",
-            "require.resolve(\"binary\" + variableResolve)"
-          ]
-        })
-      );
+      expect(missesMap({ misses })).to.be.eql(resolveObjKeys({
+        "node_modules/one/index.js": [
+          "require(variableDep)"
+        ],
+        "node_modules/one/more.js": [
+          "require(`interpolated_${variableDep}`)",
+          "require(\"binary\" + \"-expression\")",
+          "require(\"binary\" + variableDep)"
+        ],
+        "node_modules/three/node_modules/three-more/more.js": [
+          "require.resolve(variableResolve)",
+          "require.resolve(`interpolated_${variableResolve}`)",
+          "require.resolve(\"binary\" + \"-expression\")",
+          "require.resolve(\"binary\" + variableResolve)"
+        ]
+      }));
     });
 
     it("includes source map files", async () => {
@@ -2684,7 +2653,6 @@ describe("lib/trace", () => {
           const one = require("one");
           require("two");
           require(\`three\`);
-
           module.exports = 'hi';
           //# sourceMappingURL=hi.js.map
         `,
@@ -2700,9 +2668,7 @@ describe("lib/trace", () => {
             }),
             "index.js": `
               module.exports = 'one';
-
               //# sourceMappingURL=early/map-comment/should-be-ignored
-
               //@ sourceMappingURL=../one/index.not-map-suffix
             `,
             "index.jsbundle": "{\"not\":\"read\"}"
@@ -2713,7 +2679,6 @@ describe("lib/trace", () => {
             }),
             "index.js": `
               module.exports = 'two';
-
               /*# sourceMappingURL=ignore/block/version.js.map */
             `
           },
@@ -2723,7 +2688,6 @@ describe("lib/trace", () => {
             }),
             "index.js": `
               module.exports = 'three';
-
               //# sourceMappingURL=https://ignore.com/http/and/https/urls.js.map
             `
           }
@@ -2736,24 +2700,20 @@ describe("lib/trace", () => {
         includeSourceMaps: true
       });
 
-      expect(sourceMaps).to.eql(
-        fullPaths([
-          "/ABS/PATH/ho.js.map",
-          "hi.js.map",
-          "node_modules/one/index.not-map-suffix"
-        ])
-      );
+      expect(sourceMaps).to.eql(fullPaths([
+        "/ABS/PATH/ho.js.map",
+        "hi.js.map",
+        "node_modules/one/index.not-map-suffix"
+      ]));
 
-      expect(dependencies).to.eql(
-        fullPaths([
-          "node_modules/one/index.js",
-          "node_modules/one/package.json",
-          "node_modules/three/index.js",
-          "node_modules/three/package.json",
-          "node_modules/two/index.js",
-          "node_modules/two/package.json"
-        ])
-      );
+      expect(dependencies).to.eql(fullPaths([
+        "node_modules/one/index.js",
+        "node_modules/one/package.json",
+        "node_modules/three/index.js",
+        "node_modules/three/package.json",
+        "node_modules/two/index.js",
+        "node_modules/two/package.json"
+      ]));
 
       expect(missesMap({ misses })).to.eql(resolveObjKeys({}));
     });
@@ -2771,12 +2731,10 @@ describe("lib/trace", () => {
             }),
             "index.js": `
               require("http");
-
               let convert;
               try {
                 convert = require('encoding').convert;
               } catch (e) {}
-
               module.exports = 'node-fetch';
             `
           }
@@ -2786,7 +2744,9 @@ describe("lib/trace", () => {
       await traceFiles({
         srcPaths: ["hi.js"],
         allowMissing: {
-          "node-fetch": ["encoding"]
+          "node-fetch": [
+            "encoding"
+          ]
         }
       });
     });
@@ -2846,14 +2806,11 @@ describe("lib/trace", () => {
             }),
             "main.mjs": `
               const main = () => 'main';
-
               export default main;
             `,
             "reference.mjs": `
               import main from 'a-package';
-
               const reference = () => main();
-
               export default reference;
             `
           }
