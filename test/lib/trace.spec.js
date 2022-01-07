@@ -2793,5 +2793,57 @@ describe("lib/trace", () => {
         }
       });
     });
+
+    it("Use userConditions when tracing files", async () => {
+      mock({
+        "hi.js": `
+          const core = require("trace/core");
+        `,
+        node_modules: {
+          trace: {
+            "package.json": stringify({
+              name: "trace",
+              main: "index.cjs",
+              exports: {
+                ".": {
+                  require: "index.cjs"
+                },
+                "./core": {
+                  lite: {
+                    node: "./core-lite.cjs"
+                  },
+                  require: "./core.cjs"
+                }
+              }
+            }),
+            "index.cjs": `
+              const hello = () => {};
+              module.exports = hello;
+            `,
+            "core.cjs": `
+              const core = () => {};
+
+              module.exports = core;
+            `,
+            "core-lite.cjs": `
+              const coreLight = () => {};
+
+              module.exports = coreLight;
+            `
+          }
+        }
+      });
+
+      const { dependencies } = await traceFiles({
+        srcPaths: ["hi.js"],
+        userConditions: ["lite"],
+        replaceConditions: true
+      });
+
+      expect(dependencies).to.eql(fullPaths([
+        "node_modules/trace/core-lite.cjs",
+        "node_modules/trace/package.json"
+      ]));
+    });
   });
 });
