@@ -2377,7 +2377,7 @@ describe("lib/trace", () => {
                 type: "module"
               }),
               "index.mjs": `
-                import 'path';
+                import 'node:path';
                 export default {};
               `
             }
@@ -2402,17 +2402,38 @@ describe("lib/trace", () => {
             import './foo.mjs?query=2';
           `,
           "foo.mjs": `
+            import "pkg";
             const one = () => "one";
 
             export default one;
-          `
+          `,
+          node_modules: {
+            pkg: {
+              "package.json": stringify({
+                main: "index.mjs",
+                type: "module"
+              }),
+              "index.mjs": `
+                import './local-dep.mjs?query=3';
+                export default {};
+              `,
+              "local-dep.mjs": `
+                export default {};
+              `
+            }
+          }
         });
 
         const { dependencies, misses } = await traceFile({
           srcPath: "hi.js"
         });
 
-        expect(dependencies).to.eql(fullPaths(["foo.mjs"]));
+        expect(dependencies).to.eql(fullPaths([
+          "foo.mjs",
+          "node_modules/pkg/index.mjs",
+          "node_modules/pkg/local-dep.mjs",
+          "node_modules/pkg/package.json"
+        ]));
         expect(misses).to.eql({});
       });
 
