@@ -2345,6 +2345,139 @@ describe("lib/trace", () => {
         });
       });
     });
+
+    describe("modern ESM imports", () => {
+      it("imports data:text/javascript", async () => {
+        mock({
+          "hi.js": `
+            import 'data:text/javascript,console.log("hello!");';
+            import 'data:application/json,console.log("hello!");';
+            import 'data:application/wasm,console.log("hello!");';
+          `
+        });
+
+        const { dependencies, misses } = await traceFile({
+          srcPath: "hi.js"
+        });
+
+        expect(dependencies).to.eql([]);
+        expect(misses).to.eql({});
+      });
+
+      it("imports node:-prefixed libraries", async () => {
+        mock({
+          "hi.js": `
+            import 'node:fs/promises';
+            import 'pkg'
+          `,
+          node_modules: {
+            pkg: {
+              "package.json": stringify({
+                main: "index.mjs",
+                type: "module"
+              }),
+              "index.mjs": `
+                import 'node:path';
+                export default {};
+              `
+            }
+          }
+        });
+
+        const { dependencies, misses } = await traceFile({
+          srcPath: "hi.js"
+        });
+
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/pkg/index.mjs",
+          "node_modules/pkg/package.json"
+        ]));
+        expect(misses).to.eql({});
+      });
+
+      it("imports ./foo.mjs?query=1", async () => {
+        mock({
+          "hi.js": `
+            import './foo.mjs?query=1';
+            import './foo.mjs?query=2';
+          `,
+          "foo.mjs": `
+            import "pkg";
+            const one = () => "one";
+
+            export default one;
+          `,
+          node_modules: {
+            pkg: {
+              "package.json": stringify({
+                main: "index.mjs",
+                type: "module"
+              }),
+              "index.mjs": `
+                import './local-dep.mjs?query=3';
+                export default {};
+              `,
+              "local-dep.mjs": `
+                export default {};
+              `
+            }
+          }
+        });
+
+        const { dependencies, misses } = await traceFile({
+          srcPath: "hi.js"
+        });
+
+        expect(dependencies).to.eql(fullPaths([
+          "foo.mjs",
+          "node_modules/pkg/index.mjs",
+          "node_modules/pkg/local-dep.mjs",
+          "node_modules/pkg/package.json"
+        ]));
+        expect(misses).to.eql({});
+      });
+
+      it("imports self-referencing package names", async () => {
+        mock({
+          "hi.js": `
+            import reference from 'a-package/reference';
+          `,
+          node_modules: {
+            "a-package": {
+              "package.json": stringify({
+                name: "a-package",
+                exports: {
+                  ".": "./main.mjs",
+                  "./reference": "./reference.mjs"
+                }
+              }),
+              "main.mjs": `
+                const main = () => 'main';
+                export default main;
+              `,
+              "reference.mjs": `
+                import main from 'a-package';
+                const reference = () => main();
+                export default reference;
+              `
+            }
+          }
+        });
+
+        const { dependencies, misses } = await traceFile({
+          srcPath: "hi.js"
+        });
+
+        expect(dependencies).to.eql(
+          fullPaths([
+            "node_modules/a-package/main.mjs",
+            "node_modules/a-package/package.json",
+            "node_modules/a-package/reference.mjs"
+          ])
+        );
+        expect(misses).to.eql({});
+      });
+    });
   });
 
   describe("traceFiles", () => {

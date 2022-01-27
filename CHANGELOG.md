@@ -1,6 +1,11 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Feature: Handle modern ESM input types.
+  [#57](https://github.com/FormidableLabs/trace-deps/issues/57) (*[@yankovalera][]*)
+
 ## 0.4.4
 
 * Bug: Do not apply `package.json:exports` resolution to relative local file imports.
@@ -111,3 +116,4 @@ Changes
 * Initial release.
 
 [@martinnabhan]: https://github.com/martinnabhan
+[@yankovalera]: https://github.com/yankovalera
