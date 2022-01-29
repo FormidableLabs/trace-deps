@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.4.5
 
 * Feature: Handle modern ESM input types.
   [#57](https://github.com/FormidableLabs/trace-deps/issues/57) (*[@yankovalera][]*)
