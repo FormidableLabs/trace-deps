@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.4.6
 
 * Bug: Handle built-in Node.js library detection and removal when `bailIfMissing: false`.
   [#76](https://github.com/FormidableLabs/trace-deps/pull/76)
