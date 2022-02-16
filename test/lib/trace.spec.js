@@ -671,10 +671,6 @@ describe("lib/trace", () => {
             require.resolve(\`interpolated_\${variableResolve}\`);
             require.resolve("binary" + "-expression");
             require.resolve("binary" + variableResolve);
-
-            // Node.js built-ins we should ignore
-            require("path");
-            require("net");
           `,
           node_modules: {
             one: {
@@ -1655,6 +1651,69 @@ describe("lib/trace", () => {
 
         expect(missesMap({ misses })).to.be.eql({});
       });
+
+      it("resolves built-ins correctly with mixed relative paths", async () => {
+        mock({
+          "hi.js": `
+            require("./ho");
+            require("path");
+          `,
+          "ho.js": `
+            require("./hum");
+            require("assert");
+            require("one");
+            require("path");
+          `,
+          "hum.js": `
+            require("path");
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                require("./one");
+                require("assert");
+                require("two");
+                require("path");
+                module.exports = 'one';
+              `,
+              "one.js": `
+                module.exports = 'one';
+              `
+            },
+            two: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'two';
+              `,
+              "two.js": `
+                module.exports = 'two';
+              `
+            }
+          }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({
+          srcPath,
+          ignores: [
+            "two"
+          ]
+        });
+        expect(dependencies).to.eql(fullPaths([
+          "ho.js",
+          "hum.js",
+          "node_modules/one/index.js",
+          "node_modules/one/one.js",
+          "node_modules/one/package.json"
+        ]));
+
+        expect(missesMap({ misses })).to.be.eql({});
+      })
     });
 
     describe("modern ESM exports", () => {
