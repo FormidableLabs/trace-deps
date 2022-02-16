@@ -671,6 +671,10 @@ describe("lib/trace", () => {
             require.resolve(\`interpolated_\${variableResolve}\`);
             require.resolve("binary" + "-expression");
             require.resolve("binary" + variableResolve);
+
+            // Node.js built-ins we should ignore
+            require("path");
+            require("net");
           `,
           node_modules: {
             one: {
