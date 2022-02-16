@@ -1675,23 +1675,13 @@ describe("lib/trace", () => {
               "index.js": `
                 require("./one");
                 require("assert");
-                require("two");
+                // Non-existent directory.
+                require("one/bad");
                 require("path");
                 module.exports = 'one';
               `,
               "one.js": `
                 module.exports = 'one';
-              `
-            },
-            two: {
-              "package.json": stringify({
-                main: "index.js"
-              }),
-              "index.js": `
-                module.exports = 'two';
-              `,
-              "two.js": `
-                module.exports = 'two';
               `
             }
           }
@@ -1702,7 +1692,8 @@ describe("lib/trace", () => {
           srcPath,
           ignores: [
             "two"
-          ]
+          ],
+          bailOnMissing: false
         });
         expect(dependencies).to.eql(fullPaths([
           "ho.js",
@@ -1711,9 +1702,12 @@ describe("lib/trace", () => {
           "node_modules/one/one.js",
           "node_modules/one/package.json"
         ]));
-
-        expect(missesMap({ misses })).to.be.eql({});
-      })
+        expect(missesMap({ misses })).to.be.eql(resolveObjKeys({
+          "node_modules/one/index.js": [
+            "one/bad"
+          ]
+        }));
+      });
     });
 
     describe("modern ESM exports", () => {
