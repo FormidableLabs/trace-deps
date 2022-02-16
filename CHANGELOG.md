@@ -1,6 +1,11 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Bug: Handle built-in Node.js library detection and removal when `bailIfMissing: false`.
+  [#76](https://github.com/FormidableLabs/trace-deps/pull/76)
+
 ## 0.4.5
 
 * Feature: Handle modern ESM input types.

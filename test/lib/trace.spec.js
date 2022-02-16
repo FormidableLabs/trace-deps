@@ -200,6 +200,63 @@ describe("lib/trace", () => {
         }));
       });
 
+      it("resolves built-ins correctly with bailOnMissing=false", async () => {
+        mock({
+          "hi.js": `
+            require("./ho");
+            require("path");
+          `,
+          "ho.js": `
+            require("./hum");
+            require("assert");
+            require("one");
+            require("path");
+          `,
+          "hum.js": `
+            require("path");
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                require("./one");
+                require("assert");
+                // Non-existent directory.
+                require("one/bad");
+                require("path");
+                module.exports = 'one';
+              `,
+              "one.js": `
+                module.exports = 'one';
+              `
+            }
+          }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({
+          srcPath,
+          ignores: [
+            "two"
+          ],
+          bailOnMissing: false
+        });
+        expect(dependencies).to.eql(fullPaths([
+          "ho.js",
+          "hum.js",
+          "node_modules/one/index.js",
+          "node_modules/one/one.js",
+          "node_modules/one/package.json"
+        ]));
+        expect(missesMap({ misses })).to.be.eql(resolveObjKeys({
+          "node_modules/one/index.js": [
+            "one/bad"
+          ]
+        }));
+      });
+
       it("handles try/catch misses requires", async () => {
         mock({
           "hi.js": `
