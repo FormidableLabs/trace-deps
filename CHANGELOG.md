@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.4.7
 
 * Bug: Match `ignores` prefixes to file paths that have internal relative imports in addition to non-relative imports.
 
