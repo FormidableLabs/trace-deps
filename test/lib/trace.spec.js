@@ -1351,6 +1351,7 @@ describe("lib/trace", () => {
             const nestedNope = () => import("doesnt-exist-nested/one/two");
             const nestedMore = () => import("doesnt-exist-nested/one/even/more.js");
             require.resolve("does-exist-shouldnt-import/index");
+            require("exclude-only-two-nested");
           `,
           node_modules: {
             one: {
@@ -1376,6 +1377,31 @@ describe("lib/trace", () => {
                 };
               `
             },
+            "exclude-only-two-nested": {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                require("./one");
+                require("./two");
+              `,
+              "one.js": `
+                module.exports = "one";
+              `,
+              two: {
+                "index.js": `
+                  // Use full module path self-reference.
+                  require("exclude-only-two-nested/two/nested/even/further");
+                  // Relative path, and higher level too!
+                  require("./nested");
+                  require("./this/is/../a/../../big/path/still/../../within/../../nested/and/more");
+                  require("../upper-nested/something/blah-blah-blah.js");
+                `,
+                "other.js": `
+                  module.exports = "other";
+                `
+              }
+            },
             "does-exist-shouldnt-import": {
               "package.json": stringify({
                 main: "index.js"
@@ -1392,10 +1418,16 @@ describe("lib/trace", () => {
           ignores: [
             "doesnt-exist",
             "doesnt-exist-nested/one",
-            "does-exist-shouldnt-import"
+            "does-exist-shouldnt-import",
+            "exclude-only-two-nested/two/nested",
+            "exclude-only-two-nested/upper-nested"
           ]
         });
         expect(dependencies).to.eql(fullPaths([
+          "node_modules/exclude-only-two-nested/index.js",
+          "node_modules/exclude-only-two-nested/one.js",
+          "node_modules/exclude-only-two-nested/package.json",
+          "node_modules/exclude-only-two-nested/two/index.js",
           "node_modules/one/index.js",
           "node_modules/one/package.json",
           "node_modules/two/index.js",
