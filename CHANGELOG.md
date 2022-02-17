@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Bug: Match `ignores` prefixes to file paths that have internal relative imports in addition to non-relative imports.
+
 ## 0.4.6
 
 * Bug: Handle built-in Node.js library detection and removal when `bailIfMissing: false`.

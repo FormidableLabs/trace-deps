@@ -1392,8 +1392,10 @@ describe("lib/trace", () => {
                 "index.js": `
                   // Use full module path self-reference.
                   require("exclude-only-two-nested/two/nested/even/further");
-                  // TODO: Local, but for pkg.
-                  // require("./nested");
+                  // Relative path, and higher level too!
+                  require("./nested");
+                  require("./this/is/../a/../../big/path/still/../../within/../../nested/and/more");
+                  require("../upper-nested/something/blah-blah-blah.js");
                 `,
                 "other.js": `
                   module.exports = "other";
@@ -1417,7 +1419,8 @@ describe("lib/trace", () => {
             "doesnt-exist",
             "doesnt-exist-nested/one",
             "does-exist-shouldnt-import",
-            "exclude-only-two-nested/two/nested"
+            "exclude-only-two-nested/two/nested",
+            "exclude-only-two-nested/upper-nested"
           ]
         });
         expect(dependencies).to.eql(fullPaths([
