@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.4.10
 
 * Chore: Clean up unneeded custom code for modern ECMAScript.
 
