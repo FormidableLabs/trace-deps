@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Chore: Clean up unneeded custom code for modern ECMAScript.
+
 ## 0.4.9
 
 * Feature: Support `latest` ECMAScript features. Remove `acorn-node` and switch to `acorn` + `acorn-walk` with `ecmaVersion: "latest"` for all the latest ECMAScript features.
