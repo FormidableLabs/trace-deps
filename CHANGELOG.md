@@ -1,6 +1,10 @@
 Changes
 =======
 
+## UNRELEASED
+
+* Feature: Support `latest` ECMAScript features. Remove `acorn-node` and switch to `acorn` + `acorn-walk` with `ecmaVersion: "latest"` for all the latest ECMAScript features.
+
 ## 0.4.8
 
 * Bug: Remove `null` file results when passing a `packageIterator` to `resolve` library (manifests as of `resolve@1.22.0`).

@@ -1740,6 +1740,40 @@ describe("lib/trace", () => {
 
         expect(missesMap({ misses })).to.be.eql({});
       });
+
+      // Handle fancy, modern ECMAScript
+      //
+      // See: https://github.com/FormidableLabs/trace-deps/pull/80
+      it("handles latest, modern ECMAScript", async () => {
+        mock({
+          "hi.js": `
+            require("one");
+
+            let msg;
+            // Logical nullish assigment.
+            msg ??= "default";
+          `,
+          node_modules: {
+            one: {
+              "package.json": stringify({
+                main: "index.js"
+              }),
+              "index.js": `
+                module.exports = 'one';
+              `
+            }
+          }
+        });
+
+        const srcPath = "hi.js";
+        const { dependencies, misses } = await traceFile({ srcPath });
+        expect(dependencies).to.eql(fullPaths([
+          "node_modules/one/index.js",
+          "node_modules/one/package.json"
+        ]));
+
+        expect(missesMap({ misses })).to.be.eql({});
+      });
     });
 
     describe("modern ESM exports", () => {
