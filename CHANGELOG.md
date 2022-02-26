@@ -1,7 +1,7 @@
 Changes
 =======
 
-## UNRELEASED
+## 0.4.9
 
 * Feature: Support `latest` ECMAScript features. Remove `acorn-node` and switch to `acorn` + `acorn-walk` with `ecmaVersion: "latest"` for all the latest ECMAScript features.
 
