@@ -4,6 +4,7 @@ trace-deps 🔬
 [![npm version][npm_img]][npm_site]
 [![Actions Status][actions_img]][actions_site]
 [![Coverage Status][cov_img]][cov_site]
+[![Maintenance Status][maintenance-image]](#maintenance-status)
 
 A dependency tracing tool for Node.js source files.
 
@@ -157,3 +158,5 @@ Examples:
 ## Maintenance Status
 
 **Active:** Formidable is actively working on this project, and we expect to continue for work for the foreseeable future. Bug reports, feature requests and pull requests are welcome.
+
+[maintenance-image]: https://img.shields.io/badge/maintenance-active-green.svg?color=brightgreen&style=flat
